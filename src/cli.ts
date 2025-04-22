@@ -19,7 +19,7 @@ cli
   .example('msw-auto-mock ./githubapi.yaml -o mock.js -t /admin,/repo -m 30')
   .example('msw-auto-mock ./githubapi.yaml -o mock.js --typescript')
   .action(async (spec, options) => {
-    await generate(spec, options).catch(console.error);
+    await generate(spec, { ...options, mode: 'cli' }).catch(console.error);
   });
 
 cli.help();
