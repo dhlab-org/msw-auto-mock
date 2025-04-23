@@ -1,7 +1,6 @@
-export type MswMode = 'programmatic' | 'cli';
-
-export interface CliOptions {
-  output: string;
+export interface ProgrammaticOptions {
+  input: string;
+  outputDir?: string;
   maxArrayLength?: number;
   includes?: string;
   excludes?: string;
@@ -9,16 +8,10 @@ export interface CliOptions {
   codes?: string;
   static?: boolean;
   typescript?: boolean;
-  mode?: MswMode;
+  moduleIndex?: number; // 엔티티 분류에 사용할 URL 경로의 인덱스
 }
 
-export type ProgrammaticOptions = Omit<CliOptions, 'output'> & {
-  input: string;
-  outputDir?: string;
-  moduleIndex?: number; // 엔티티 분류에 사용할 URL 경로의 인덱스
-};
-
-export type ConfigOptions = CliOptions & {
+export type ConfigOptions = ProgrammaticOptions & {
   typescript?: boolean;
   ai?: {
     enable?: boolean;

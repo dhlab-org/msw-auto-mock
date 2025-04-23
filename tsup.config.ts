@@ -6,6 +6,6 @@ export const tsup: Options = {
   clean: true,
   minify: false,
   format: ['cjs'],
-  dts: false,
-  entryPoints: ['src/cli.ts'],
+  dts: true,
+  entryPoints: ['src/index.ts'],
 };

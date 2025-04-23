@@ -10,10 +10,10 @@ import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { CliOptions, ConfigOptions } from './types';
+import { ConfigOptions, ProgrammaticOptions } from './types';
 import { name as moduleName } from '../package.json';
 
-export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: CliOptions) {
+export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
   const operationDefinitions = getOperationDefinitions(apiDoc);
 
@@ -23,9 +23,9 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
     .map(definition => toOperation(definition, apiGen));
 }
 
-export async function generate(spec: string, inlineOptions: CliOptions) {
+export async function generate(spec: string, options: ProgrammaticOptions) {
   const explorer = cosmiconfig(moduleName);
-  const finalOptions: ConfigOptions = { ...inlineOptions };
+  const finalOptions: ConfigOptions = { ...options };
 
   try {
     const result = await explorer.search();
@@ -33,11 +33,11 @@ export async function generate(spec: string, inlineOptions: CliOptions) {
       Object.assign(finalOptions, result?.config);
     }
   } catch (e) {
-    console.log(e);
-    process.exit(1);
+    console.error(e);
+    throw e;
   }
 
-  const { output: outputFolder } = finalOptions;
+  const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
   const fileExt = finalOptions.typescript ? '.ts' : '.js';
@@ -66,6 +66,15 @@ export async function generate(spec: string, inlineOptions: CliOptions) {
     path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),
     await prettify(`handlers${fileExt}`, code),
   );
+
+  return {
+    code,
+    operationCollection,
+    baseURL,
+    targetFolder,
+    success: true,
+    outputFolder: targetFolder,
+  };
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {
@@ -110,7 +119,7 @@ function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition
   );
 }
 
-function operationFilter(operation: OperationDefinition, options: CliOptions): boolean {
+function operationFilter(operation: OperationDefinition, options: ProgrammaticOptions): boolean {
   const includes = options?.includes?.split(',') ?? null;
   const excludes = options?.excludes?.split(',') ?? null;
 
@@ -123,7 +132,7 @@ function operationFilter(operation: OperationDefinition, options: CliOptions): b
   return true;
 }
 
-function codeFilter(operation: OperationDefinition, options: CliOptions): OperationDefinition {
+function codeFilter(operation: OperationDefinition, options: ProgrammaticOptions): OperationDefinition {
   const rawCodes = options?.codes;
 
   const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
