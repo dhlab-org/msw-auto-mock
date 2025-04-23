@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import fs from 'fs';
+import path from 'path';
 
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
