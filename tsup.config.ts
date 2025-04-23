@@ -5,7 +5,9 @@ export const tsup: Options = {
   sourcemap: false,
   clean: true,
   minify: false,
-  format: ['cjs'],
+  format: ['cjs', 'esm'],
   dts: true,
+  external: ['node:fs', 'node:path', 'fs', 'path'],
+  noExternal: ['swagger2openapi', 'oazapfts'],
   entryPoints: ['src/index.ts'],
 };

@@ -56,8 +56,13 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   code = mockTemplate(operationCollection, baseURL, finalOptions);
 
   try {
-    fs.mkdirSync(targetFolder);
-  } catch {}
+    fs.mkdirSync(targetFolder, { recursive: true });
+  } catch (err: any) {
+    // 디렉토리가 이미 존재하는 경우는 무시
+    if (err.code !== 'EEXIST') {
+      console.error('디렉토리 생성 오류:', err);
+    }
+  }
 
   fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
   fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
