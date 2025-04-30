@@ -10,7 +10,7 @@ import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { ConfigOptions, ProgrammaticOptions } from './types';
+import { ConfigOptions, FileExtension, ProgrammaticOptions } from './types';
 import { name as moduleName } from '../package.json';
 
 export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
@@ -40,7 +40,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  const fileExt = finalOptions.typescript ? '.ts' : '.js';
+  const fileExt: FileExtension = finalOptions.typescript ? '.ts' : '.js';
 
   let code: string;
   const apiDoc = await getV3Doc(spec);
@@ -64,13 +64,8 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     }
   }
 
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
-  fs.writeFileSync(
-    path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),
-    await prettify(`handlers${fileExt}`, code),
-  );
+  generateEnvironmentFiles(finalOptions, targetFolder, fileExt);
+  await generateHandlers(code, targetFolder, fileExt);
 
   return {
     code,
@@ -80,6 +75,33 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     success: true,
     outputFolder: targetFolder,
   };
+}
+
+function generateEnvironmentFiles(finalOptions: ConfigOptions, targetFolder: string, fileExt: FileExtension) {
+  switch (finalOptions.environment) {
+    case 'next':
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+      break;
+    case 'react':
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+      break;
+    case 'react-native':
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+      break;
+    default:
+      // 환경이 지정되지 않은 경우 모든 파일 생성
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+  }
+}
+
+async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension) {
+  fs.writeFileSync(
+    path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),
+    await prettify(`handlers${fileExt}`, code),
+  );
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {
