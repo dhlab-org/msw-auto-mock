@@ -72,7 +72,6 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     operationCollection,
     baseURL,
     targetFolder,
-    success: true,
     outputFolder: targetFolder,
   };
 }
