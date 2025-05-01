@@ -1,4 +1,4 @@
-export interface ProgrammaticOptions {
+export type ProgrammaticOptions = {
   input: string;
   outputDir?: string;
   maxArrayLength?: number;
@@ -19,37 +19,6 @@ export interface ProgrammaticOptions {
    * - react-native: React Native 환경을 위한 mock 파일 생성
    */
   environment?: 'next' | 'react' | 'react-native';
-}
-
-export type ConfigOptions = ProgrammaticOptions & {
-  typescript?: boolean;
-  ai?: {
-    enable?: boolean;
-    provider: 'openai' | 'azure' | 'anthropic';
-    openai?: {
-      baseURL?: string;
-      /**
-       * defaults to `OPENAI_API_KEY`
-       */
-      apiKey?: string;
-      model?: string;
-    };
-    azure?: {
-      /**
-       * defaults to `AZURE_API_KEY`
-       */
-      apiKey?: string;
-      resource?: string;
-      deployment?: string;
-    };
-    anthropic?: {
-      /**
-       * defaults to `ANTHROPIC_API_KEY`
-       */
-      apiKey?: string;
-      model?: string;
-    };
-  };
 };
 
 export type FileExtension = '.ts' | '.js';

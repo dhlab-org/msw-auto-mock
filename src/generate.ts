@@ -4,14 +4,12 @@ import path from 'path';
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import camelCase from 'lodash/camelCase';
-import { cosmiconfig } from 'cosmiconfig';
 
 import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { ConfigOptions, FileExtension, ProgrammaticOptions } from './types';
-import { name as moduleName } from '../package.json';
+import { FileExtension, ProgrammaticOptions } from './types';
 
 export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
@@ -24,36 +22,23 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
 }
 
 export async function generate(spec: string, options: ProgrammaticOptions) {
-  const explorer = cosmiconfig(moduleName);
-  const finalOptions: ConfigOptions = { ...options };
-
-  try {
-    const result = await explorer.search();
-    if (!result?.isEmpty) {
-      Object.assign(finalOptions, result?.config);
-    }
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  const fileExt: FileExtension = finalOptions.typescript ? '.ts' : '.js';
+  const fileExt: FileExtension = options.typescript ? '.ts' : '.js';
 
   let code: string;
   const apiDoc = await getV3Doc(spec);
-  const operationCollection = generateOperationCollection(apiDoc, finalOptions);
+  const operationCollection = generateOperationCollection(apiDoc, options);
 
   let baseURL = '';
-  if (finalOptions.baseUrl === true) {
+  if (options.baseUrl === true) {
     baseURL = getServerUrl(apiDoc);
-  } else if (typeof finalOptions.baseUrl === 'string') {
-    baseURL = finalOptions.baseUrl;
+  } else if (typeof options.baseUrl === 'string') {
+    baseURL = options.baseUrl;
   }
 
-  code = mockTemplate(operationCollection, baseURL, finalOptions);
+  code = mockTemplate(operationCollection, baseURL, options);
 
   try {
     fs.mkdirSync(targetFolder, { recursive: true });
@@ -64,7 +49,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     }
   }
 
-  generateEnvironmentFiles(finalOptions, targetFolder, fileExt);
+  generateEnvironmentFiles(options, targetFolder, fileExt);
   await generateHandlers(code, targetFolder, fileExt);
 
   return {
@@ -76,8 +61,8 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   };
 }
 
-function generateEnvironmentFiles(finalOptions: ConfigOptions, targetFolder: string, fileExt: FileExtension) {
-  switch (finalOptions.environment) {
+function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
+  switch (options.environment) {
     case 'next':
       fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
       fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);

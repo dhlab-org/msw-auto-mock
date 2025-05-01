@@ -3,7 +3,7 @@ import { OpenAPIV3 } from 'openapi-types';
 import merge from 'lodash/merge';
 import camelCase from 'lodash/camelCase';
 import { faker } from '@faker-js/faker';
-import { ConfigOptions } from './types';
+import { ProgrammaticOptions } from './types';
 import { isValidRegExp } from './utils';
 
 const MAX_STRING_LENGTH = 42;
@@ -32,7 +32,7 @@ export function getResIdentifierName(res: ResponseMap) {
 export function transformToGenerateResultFunctions(
   operationCollection: OperationCollection,
   baseURL: string,
-  options?: ConfigOptions,
+  options?: ProgrammaticOptions,
 ): string {
   const context = {
     faker,
@@ -52,35 +52,19 @@ export function transformToGenerateResultFunctions(
             return '';
           }
 
-          const useFaker = options?.ai?.enable !== true;
-
-          if (useFaker) {
-            if (!r.responses) {
-              return;
-            }
-            const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
-            const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
-            if (options?.static) {
-              vm.runInContext(`result = ${fakerResult};`, context);
-            }
-
-            return [
-              `export function `,
-              `${name}() { `,
-              `return ${options?.static ? JSON.stringify(context.result) : fakerResult} `,
-              `};\n`,
-            ].join('\n');
-          }
-
           if (!r.responses) {
             return;
           }
           const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
-          const operationString = JSON.stringify(r.responses?.[jsonResponseKey], null, 4);
+          const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
+          if (options?.static) {
+            vm.runInContext(`result = ${fakerResult};`, context);
+          }
+
           return [
-            `export async function `,
+            `export function `,
             `${name}() { `,
-            `return await ${options.static ? `withCacheOne(ask)(${operationString})` : `ask(${operationString})`} `,
+            `return ${options?.static ? JSON.stringify(context.result) : fakerResult} `,
             `};\n`,
           ].join('\n');
         })
@@ -89,7 +73,7 @@ export function transformToGenerateResultFunctions(
     .join('\n');
 }
 
-export function transformToHandlerCode(operationCollection: OperationCollection, options: ConfigOptions): string {
+export function transformToHandlerCode(operationCollection: OperationCollection, options: ProgrammaticOptions): string {
   return operationCollection
     .map(op => {
       return `http.${op.verb}(\`\${baseURL}${op.path}\`, async () => {
