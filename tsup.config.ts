@@ -9,7 +9,7 @@ export const tsup: Options = {
   dts: true,
   external: ['node:fs', 'node:path', 'fs', 'path'],
   noExternal: ['swagger2openapi', 'oazapfts'],
-  target: 'node14',
+  target: 'node20',
   platform: 'node',
   entryPoints: ['src/index.ts'],
 };
