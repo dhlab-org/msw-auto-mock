@@ -1,19 +1,17 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import fs from 'fs';
+import path from 'path';
 
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import camelCase from 'lodash/camelCase';
-import { cosmiconfig } from 'cosmiconfig';
 
 import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { CliOptions, ConfigOptions } from './types';
-import { name as moduleName } from '../package.json';
+import { FileExtension, ProgrammaticOptions } from './types';
 
-export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: CliOptions) {
+export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
   const operationDefinitions = getOperationDefinitions(apiDoc);
 
@@ -23,45 +21,66 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
     .map(definition => toOperation(definition, apiGen));
 }
 
-export async function generate(spec: string, inlineOptions: CliOptions) {
-  const explorer = cosmiconfig(moduleName);
-  const finalOptions: ConfigOptions = { ...inlineOptions };
-
-  try {
-    const result = await explorer.search();
-    if (!result?.isEmpty) {
-      Object.assign(finalOptions, result?.config);
-    }
-  } catch (e) {
-    console.log(e);
-    process.exit(1);
-  }
-
-  const { output: outputFolder } = finalOptions;
+export async function generate(spec: string, options: ProgrammaticOptions) {
+  const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  const fileExt = finalOptions.typescript ? '.ts' : '.js';
+  const fileExt: FileExtension = options.typescript ? '.ts' : '.js';
 
   let code: string;
   const apiDoc = await getV3Doc(spec);
-  const operationCollection = generateOperationCollection(apiDoc, finalOptions);
+  const operationCollection = generateOperationCollection(apiDoc, options);
 
   let baseURL = '';
-  if (finalOptions.baseUrl === true) {
+  if (options.baseUrl === true) {
     baseURL = getServerUrl(apiDoc);
-  } else if (typeof finalOptions.baseUrl === 'string') {
-    baseURL = finalOptions.baseUrl;
+  } else if (typeof options.baseUrl === 'string') {
+    baseURL = options.baseUrl;
   }
 
-  code = mockTemplate(operationCollection, baseURL, finalOptions);
+  code = mockTemplate(operationCollection, baseURL, options);
 
   try {
-    fs.mkdirSync(targetFolder);
-  } catch {}
+    fs.mkdirSync(targetFolder, { recursive: true });
+  } catch (err: any) {
+    // 디렉토리가 이미 존재하는 경우는 무시
+    if (err.code !== 'EEXIST') {
+      console.error('디렉토리 생성 오류:', err);
+    }
+  }
 
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+  generateEnvironmentFiles(options, targetFolder, fileExt);
+  await generateHandlers(code, targetFolder, fileExt);
+
+  return {
+    code,
+    operationCollection,
+    baseURL,
+    targetFolder,
+    outputFolder: targetFolder,
+  };
+}
+
+function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
+  const generateNodeEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+  const generateBrowserEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+  const generateReactNativeEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+
+  const config = {
+    next: [generateNodeEnv, generateBrowserEnv],
+    react: [generateBrowserEnv],
+    'react-native': [generateReactNativeEnv],
+    default: [generateNodeEnv, generateBrowserEnv, generateReactNativeEnv],
+  };
+
+  const generate = config[options.environment ?? 'default'];
+  generate.forEach(fn => fn());
+}
+
+async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension) {
   fs.writeFileSync(
     path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),
     await prettify(`handlers${fileExt}`, code),
@@ -110,7 +129,7 @@ function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition
   );
 }
 
-function operationFilter(operation: OperationDefinition, options: CliOptions): boolean {
+function operationFilter(operation: OperationDefinition, options: ProgrammaticOptions): boolean {
   const includes = options?.includes?.split(',') ?? null;
   const excludes = options?.excludes?.split(',') ?? null;
 
@@ -123,7 +142,7 @@ function operationFilter(operation: OperationDefinition, options: CliOptions): b
   return true;
 }
 
-function codeFilter(operation: OperationDefinition, options: CliOptions): OperationDefinition {
+function codeFilter(operation: OperationDefinition, options: ProgrammaticOptions): OperationDefinition {
   const rawCodes = options?.codes;
 
   const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;

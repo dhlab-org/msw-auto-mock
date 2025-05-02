@@ -1,5 +1,5 @@
-import * as prettier from 'prettier';
-import * as path from 'path';
+import prettier from 'prettier';
+import path from 'path';
 import camelCase from 'lodash/camelCase';
 
 const EXTENSION_TO_PARSER: Record<string, string> = {

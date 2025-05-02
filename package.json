@@ -1,10 +1,16 @@
 {
-  "name": "msw-auto-mock",
+  "name": "@dataai/msw-auto-mock",
   "version": "0.31.0",
   "description": "Generate random mock data from OpenAPI descriptions for msw.",
-  "main": "dist/cli.js",
-  "bin": {
-    "msw-auto-mock": "./bin/cli.js"
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "scripts": {
     "build": "tsup",
@@ -16,13 +22,8 @@
   "author": "zoubingwu<zoubingwu@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ai-sdk/anthropic": "1.1.15",
-    "@ai-sdk/azure": "1.2.1",
-    "@ai-sdk/openai": "1.2.1",
     "@apidevtools/swagger-parser": "10.1.0",
-    "ai": "4.1.54",
     "cac": "6.7.14",
-    "cosmiconfig": "9.0.0",
     "lodash": "4.17.21",
     "prettier": "3.3.2",
     "swagger2openapi": "7.0.8",
@@ -64,5 +65,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "packageManager": "pnpm@10.6.1"
+  "packageManager": "pnpm@10.6.1",
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

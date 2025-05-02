@@ -6,6 +6,10 @@ export const tsup: Options = {
   clean: true,
   minify: false,
   format: ['cjs'],
-  dts: false,
-  entryPoints: ['src/cli.ts'],
+  dts: true,
+  external: ['node:fs', 'node:path', 'fs', 'path'],
+  noExternal: ['swagger2openapi', 'oazapfts'],
+  target: 'node20',
+  platform: 'node',
+  entryPoints: ['src/index.ts'],
 };
