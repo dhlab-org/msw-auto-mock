@@ -62,23 +62,22 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 }
 
 function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
-  switch (options.environment) {
-    case 'next':
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
-      break;
-    case 'react':
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
-      break;
-    case 'react-native':
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
-      break;
-    default:
-      // 환경이 지정되지 않은 경우 모든 파일 생성
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
-      fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
-  }
+  const generateNodeEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+  const generateBrowserEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+  const generateReactNativeEnv = () =>
+    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+
+  const config = {
+    next: [generateNodeEnv, generateBrowserEnv],
+    react: [generateBrowserEnv],
+    'react-native': [generateReactNativeEnv],
+    default: [generateNodeEnv, generateBrowserEnv, generateReactNativeEnv],
+  };
+
+  const generate = config[options.environment ?? 'default'];
+  generate.forEach(fn => fn());
 }
 
 async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension) {
