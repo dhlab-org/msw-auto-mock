@@ -1,7 +1,7 @@
 import vm from 'node:vm';
 import { OpenAPIV3 } from 'openapi-types';
 import merge from 'lodash/merge';
-import camelCase from 'lodash/camelCase';
+import { camelCase } from 'es-toolkit/string';
 import { faker } from '@faker-js/faker';
 import { ProgrammaticOptions } from './types';
 import { isValidRegExp } from './utils';

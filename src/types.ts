@@ -9,10 +9,6 @@ export type ProgrammaticOptions = {
   static?: boolean;
   typescript?: boolean;
   /**
-   * 엔티티 분류에 사용할 URL 경로의 인덱스
-   */
-  moduleIndex?: number;
-  /**
    * 생성할 mock 파일의 환경 설정
    * - next: node.js와 브라우저 환경을 위한 mock 파일 생성
    * - react: 브라우저 환경을 위한 mock 파일 생성

@@ -3,7 +3,7 @@ import path from 'path';
 
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
-import camelCase from 'lodash/camelCase';
+import { camelCase } from 'es-toolkit/string';
 
 import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
@@ -29,6 +29,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
+  console.log(operationCollection)
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
   const code = mockTemplate(operationCollection, baseURL, options);
 
