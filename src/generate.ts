@@ -40,7 +40,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     codeList.push(code)
 
     try {
-      fs.mkdirSync(targetFolder, { recursive: true });
+      fs.mkdirSync(path.resolve(process.cwd(), targetFolder, 'handlers'), { recursive: true });
     } catch (err: any) {
       // 디렉토리가 이미 존재하는 경우는 무시
       if (err.code !== 'EEXIST') {
@@ -65,7 +65,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
 async function generateCombineHandlers(entityList: string[], targetFolder: string, fileExt: FileExtension) {
   const combinedHandlers = combineHandlers(entityList);
-  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),  await prettify(`handlers${fileExt}`, combinedHandlers));
+  fs.writeFileSync(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index${fileExt}`),  await prettify(`index${fileExt}`, combinedHandlers));
 }
 
 function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
@@ -89,7 +89,7 @@ function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: st
 
 async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension, entity: string) {
   fs.writeFileSync(
-    path.resolve(process.cwd(), targetFolder, `${entity}_handlers${fileExt}`),
+    path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers${fileExt}`),
     await prettify(`${entity}_handlers${fileExt}`, code),
   );
 }
