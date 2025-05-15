@@ -52,7 +52,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   }
 
   generateEnvironmentFiles(options, targetFolder, fileExt);
-  generateCombineHandlers(Object.keys(groupByEntity), targetFolder, fileExt);
+  generateCombinedHandler(Object.keys(groupByEntity), targetFolder, fileExt);
 
   return {
     codeList,
@@ -63,7 +63,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   };
 }
 
-async function generateCombineHandlers(entityList: string[], targetFolder: string, fileExt: FileExtension) {
+async function generateCombinedHandler(entityList: string[], targetFolder: string, fileExt: FileExtension) {
   const combinedHandlers = combineHandlers(entityList);
   fs.writeFileSync(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index${fileExt}`),  await prettify(`index${fileExt}`, combinedHandlers));
 }
