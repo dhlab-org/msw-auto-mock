@@ -27,18 +27,10 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
   const fileExt: FileExtension = options.typescript ? '.ts' : '.js';
 
-  let code: string;
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
-
-  let baseURL = '';
-  if (options.baseUrl === true) {
-    baseURL = getServerUrl(apiDoc);
-  } else if (typeof options.baseUrl === 'string') {
-    baseURL = options.baseUrl;
-  }
-
-  code = mockTemplate(operationCollection, baseURL, options);
+  const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
+  const code = mockTemplate(operationCollection, baseURL, options);
 
   try {
     fs.mkdirSync(targetFolder, { recursive: true });
