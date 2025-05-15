@@ -8,7 +8,7 @@ import { camelCase } from 'es-toolkit/string';
 import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
-import { browserIntegration, combineHanders as combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
+import { browserIntegration, combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
 import { FileExtension, ProgrammaticOptions } from './types';
 import { groupBy } from 'lodash';
 

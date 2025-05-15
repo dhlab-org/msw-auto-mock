@@ -67,7 +67,7 @@ export const reactNativeIntegration = [
   `export const server = setupServer(...handlers)`,
 ].join(`\n`);
 
-export const combineHanders = (entityList: string[]) => {
+export const combineHandlers = (entityList: string[]) => {
   const handlersImport =  entityList.map((entity) => {
     return `import { ${entity}Handlers } from './${entity}_handlers';`
   }).join('\n')
