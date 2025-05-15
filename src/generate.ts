@@ -8,8 +8,9 @@ import { camelCase } from 'es-toolkit/string';
 import { getV3Doc } from './swagger';
 import { prettify, toExpressLikePath } from './utils';
 import { Operation } from './transform';
-import { browserIntegration, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
+import { browserIntegration, combineHanders as combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
 import { FileExtension, ProgrammaticOptions } from './types';
+import { groupBy } from 'lodash';
 
 export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
@@ -29,29 +30,42 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
-  console.log(operationCollection)
-  const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
-  const code = mockTemplate(operationCollection, baseURL, options);
+  const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
 
-  try {
-    fs.mkdirSync(targetFolder, { recursive: true });
-  } catch (err: any) {
-    // 디렉토리가 이미 존재하는 경우는 무시
-    if (err.code !== 'EEXIST') {
-      console.error('디렉토리 생성 오류:', err);
+  const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
+
+  const codeList = []
+  for (const entity in groupByEntity) {
+    const code = mockTemplate(groupByEntity[entity], baseURL, options, entity);
+    codeList.push(code)
+
+    try {
+      fs.mkdirSync(targetFolder, { recursive: true });
+    } catch (err: any) {
+      // 디렉토리가 이미 존재하는 경우는 무시
+      if (err.code !== 'EEXIST') {
+        console.error('디렉토리 생성 오류:', err);
+      }
     }
+  
+    await generateHandlers(code, targetFolder, fileExt, entity);
   }
 
   generateEnvironmentFiles(options, targetFolder, fileExt);
-  await generateHandlers(code, targetFolder, fileExt);
+  generateCombineHandlers(Object.keys(groupByEntity), targetFolder, fileExt);
 
   return {
-    code,
+    codeList,
     operationCollection,
     baseURL,
     targetFolder,
     outputFolder: targetFolder,
   };
+}
+
+async function generateCombineHandlers(entityList: string[], targetFolder: string, fileExt: FileExtension) {
+  const combinedHandlers = combineHandlers(entityList);
+  fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),  await prettify(`handlers${fileExt}`, combinedHandlers));
 }
 
 function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
@@ -73,10 +87,10 @@ function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: st
   generate.forEach(fn => fn());
 }
 
-async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension) {
+async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension, entity: string) {
   fs.writeFileSync(
-    path.resolve(process.cwd(), targetFolder, `handlers${fileExt}`),
-    await prettify(`handlers${fileExt}`, code),
+    path.resolve(process.cwd(), targetFolder, `${entity}_handlers${fileExt}`),
+    await prettify(`${entity}_handlers${fileExt}`, code),
   );
 }
 
