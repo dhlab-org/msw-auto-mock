@@ -85,7 +85,7 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
               : `[${identifier ? `${identifier}()` : 'undefined'}, { status: ${parseInt(response?.code!)} }]`;
 
           return result;
-        })}]${options.typescript ? `as [any, { status: number }][]` : ''};
+        })}];
 
           return HttpResponse.json(...resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length])
         }),\n`;
