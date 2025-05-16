@@ -25,8 +25,10 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
 export async function generate(spec: string, options: ProgrammaticOptions) {
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
+
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
+
   const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
   const codeList = mapValues(groupByEntity, (operationCollection, entity) => {

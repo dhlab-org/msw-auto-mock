@@ -79,10 +79,12 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
       return `http.${op.verb}(\`\${baseURL}${op.path}\`, async () => {
         const resultArray = [${op.response.map(response => {
           const identifier = getResIdentifierName(response);
+          const status = parseInt(response?.code!);
+          const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
           const result =
-            parseInt(response?.code!) === 204
-              ? `[undefined, { status: ${parseInt(response?.code!)} }]`
-              : `[${identifier ? `${identifier}()` : 'undefined'}, { status: ${parseInt(response?.code!)} }]`;
+            status === 204
+              ? `[undefined, { status: ${status}, responseType: '${responseType}' }]`
+              : `[${identifier ? `${identifier}()` : 'undefined'}, { status: ${status}, responseType: '${responseType}' }]`;
 
           return result;
         })}];
