@@ -1,4 +1,3 @@
-import fs from 'fs';
 import path from 'path';
 
 import ApiGenerator, { isReference } from 'oazapfts/generate';
@@ -6,11 +5,12 @@ import { OpenAPIV3 } from 'openapi-types';
 import { camelCase } from 'es-toolkit/string';
 
 import { getV3Doc } from './swagger';
-import { prettify, toExpressLikePath } from './utils';
+import { toExpressLikePath, writeFile } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
 import { FileExtension, ProgrammaticOptions } from './types';
 import { groupBy } from 'lodash';
+import { isString, mapValues } from 'es-toolkit';
 
 export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
@@ -25,32 +25,16 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
 export async function generate(spec: string, options: ProgrammaticOptions) {
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
-
   const fileExt: FileExtension = options.typescript ? '.ts' : '.js';
-
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
   const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
-
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
+  const codeList = mapValues(groupByEntity, (operationCollection, entity) => {
+    return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
+  });
 
-  const codeList = []
-  for (const entity in groupByEntity) {
-    const code = mockTemplate(groupByEntity[entity], baseURL, options, entity);
-    codeList.push(code)
-
-    try {
-      fs.mkdirSync(path.resolve(process.cwd(), targetFolder, 'handlers'), { recursive: true });
-    } catch (err: any) {
-      // 디렉토리가 이미 존재하는 경우는 무시
-      if (err.code !== 'EEXIST') {
-        console.error('디렉토리 생성 오류:', err);
-      }
-    }
-  
-    await generateHandlers(code, targetFolder, fileExt, entity);
-  }
-
+  await generateHandlers(codeList, targetFolder, fileExt);
   generateEnvironmentFiles(options, targetFolder, fileExt);
   generateCombinedHandler(Object.keys(groupByEntity), targetFolder, fileExt);
 
@@ -65,16 +49,16 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
 async function generateCombinedHandler(entityList: string[], targetFolder: string, fileExt: FileExtension) {
   const combinedHandlers = combineHandlers(entityList);
-  fs.writeFileSync(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index${fileExt}`),  await prettify(`index${fileExt}`, combinedHandlers));
+  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index${fileExt}`), combinedHandlers);
 }
 
 function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
   const generateNodeEnv = () =>
-    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
   const generateBrowserEnv = () =>
-    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
   const generateReactNativeEnv = () =>
-    fs.writeFileSync(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
 
   const config = {
     next: [generateNodeEnv, generateBrowserEnv],
@@ -87,11 +71,15 @@ function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: st
   generate.forEach(fn => fn());
 }
 
-async function generateHandlers(code: string, targetFolder: string, fileExt: FileExtension, entity: string) {
-  fs.writeFileSync(
-    path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers${fileExt}`),
-    await prettify(`${entity}_handlers${fileExt}`, code),
-  );
+async function generateHandlers(codeList: Record<string, string | null>, targetFolder: string, fileExt: FileExtension) {
+  await Promise.all(Object.entries(codeList).map(async ([entity, code]) => {
+    if (!code) return
+
+    await writeFile(
+      path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers${fileExt}`),
+      code,
+    );
+  }));
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {

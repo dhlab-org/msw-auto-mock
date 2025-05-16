@@ -1,6 +1,7 @@
 import prettier from 'prettier';
 import path from 'path';
 import camelCase from 'lodash/camelCase';
+import fs from 'fs/promises';
 
 const EXTENSION_TO_PARSER: Record<string, string> = {
   ts: 'typescript',
@@ -59,4 +60,11 @@ export const isValidRegExp = (regExpCandidate: string) => {
     isValid = false;
   }
   return isValid;
+};
+
+export const writeFile = async (filePath: string, content: string) => {
+  const prettifiedContent = await prettify(filePath, content);
+  const directory = path.dirname(filePath);
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(filePath, prettifiedContent);
 };

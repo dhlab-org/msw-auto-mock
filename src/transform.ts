@@ -73,7 +73,7 @@ export function transformToGenerateResultFunctions(
     .join('\n');
 }
 
-export function transformToHandlerCode(operationCollection: OperationCollection, options: ProgrammaticOptions): string {
+export function transformToHandlerCode(operationCollection: OperationCollection, ): string {
   return operationCollection
     .map(op => {
       return `http.${op.verb}(\`\${baseURL}${op.path}\`, async () => {

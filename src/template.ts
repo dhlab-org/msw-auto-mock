@@ -43,7 +43,7 @@ ${options.static ? '' : `const MAX_ARRAY_LENGTH = ${options?.maxArrayLength ?? 2
 ${withApiCounterCode(options)}
 
 export const ${entity}Handlers = [
-  ${transformToHandlerCode(operationCollection, options)}
+  ${transformToHandlerCode(operationCollection)}
 ];
 
 ${transformToGenerateResultFunctions(operationCollection, baseURL, options)}
