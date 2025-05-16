@@ -93,7 +93,7 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
           const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
           const result = `{
             status: ${status},
-            responseType: '${responseType}',
+            responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
             body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
           }`
 
