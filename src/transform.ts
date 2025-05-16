@@ -33,7 +33,7 @@ export function transformToGenerateResultFunctions(
   operationCollection: OperationCollection,
   baseURL: string,
   options?: ProgrammaticOptions,
-): string {
+) {
   const context = {
     faker,
     MAX_STRING_LENGTH,
@@ -55,6 +55,16 @@ export function transformToGenerateResultFunctions(
           if (!r.responses) {
             return;
           }
+
+          const isCustomResponse = Object.keys(options?.controllers ?? {}).includes(name);
+          if(isCustomResponse) {
+            return [
+              `export function ${name}(info: Parameters<HttpResponseResolver>[0]) {`,
+              `  return controllers.${name}(info);`,
+              `};\n`,
+            ].join('\n');
+          }
+
           const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
           const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
           if (options?.static) {
@@ -76,7 +86,7 @@ export function transformToGenerateResultFunctions(
 export function transformToHandlerCode(operationCollection: OperationCollection, ): string {
   return operationCollection
     .map(op => {
-      return `http.${op.verb}(\`\${baseURL}${op.path}\`, async () => {
+      return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
         const resultArray = [${op.response.map(response => {
           const identifier = getResIdentifierName(response);
           const status = parseInt(response?.code!);
@@ -84,7 +94,7 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
           const result = `{
             status: ${status},
             responseType: '${responseType}',
-            body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}()` : 'undefined'}`}
+            body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
           }`
 
           return result;

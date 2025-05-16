@@ -1,8 +1,12 @@
 import { ProgrammaticOptions } from './types';
 import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions } from './transform';
 
-const getImportsCode = () => {
-  const imports = [`import { HttpResponse, http } from 'msw';`, `import { faker } from '@faker-js/faker';`];
+const getImportsCode = (options: ProgrammaticOptions) => {
+  const imports = [
+    `import { HttpResponse, http, type HttpResponseResolver  } from 'msw';`, 
+    `import { faker } from '@faker-js/faker';`,
+    `import { controllers } from '${options?.controllerPath ?? '@/app/mocks/controllers'}';`
+  ];
 
   return imports.join('\n');
 };
@@ -33,7 +37,7 @@ export const mockTemplate = (
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
-${getImportsCode()}
+${getImportsCode(options)}
 
 faker.seed(1);
 
