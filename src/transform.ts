@@ -81,16 +81,24 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
           const identifier = getResIdentifierName(response);
           const status = parseInt(response?.code!);
           const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
-          const result =
-            status === 204
-              ? `[undefined, { status: ${status}, responseType: '${responseType}' }]`
-              : `[${identifier ? `${identifier}()` : 'undefined'}, { status: ${status}, responseType: '${responseType}' }]`;
+          const result = `{
+            status: ${status},
+            responseType: '${responseType}',
+            body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}()` : 'undefined'}`}
+          }`
 
           return result;
         })}];
 
-          return HttpResponse.json(...resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length])
-        }),\n`;
+        const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length]
+        
+        return new HttpResponse(JSON.stringify(selectedResult.body), {
+          status: selectedResult.status,
+          headers: {
+            'Content-Type': selectedResult.responseType
+          }
+        })
+      }),\n`;
     })
     .join('  ')
     .trimEnd();
