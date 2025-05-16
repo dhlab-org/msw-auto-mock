@@ -7,7 +7,6 @@ export type ProgrammaticOptions = {
   baseUrl?: string | true;
   codes?: string;
   static?: boolean;
-  typescript?: boolean;
   /**
    * 생성할 mock 파일의 환경 설정
    * - next: node.js와 브라우저 환경을 위한 mock 파일 생성
@@ -16,5 +15,3 @@ export type ProgrammaticOptions = {
    */
   environment?: 'next' | 'react' | 'react-native';
 };
-
-export type FileExtension = '.ts' | '.js';

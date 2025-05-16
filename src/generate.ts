@@ -8,7 +8,7 @@ import { getV3Doc } from './swagger';
 import { toExpressLikePath, writeFile } from './utils';
 import { Operation } from './transform';
 import { browserIntegration, combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { FileExtension, ProgrammaticOptions } from './types';
+import { ProgrammaticOptions } from './types';
 import { groupBy } from 'lodash';
 import { isString, mapValues } from 'es-toolkit';
 
@@ -25,7 +25,6 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
 export async function generate(spec: string, options: ProgrammaticOptions) {
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
-  const fileExt: FileExtension = options.typescript ? '.ts' : '.js';
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
   const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
@@ -34,9 +33,9 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
   });
 
-  await generateHandlers(codeList, targetFolder, fileExt);
-  generateEnvironmentFiles(options, targetFolder, fileExt);
-  generateCombinedHandler(Object.keys(groupByEntity), targetFolder, fileExt);
+  await generateHandlers(codeList, targetFolder);
+  generateEnvironmentFiles(options, targetFolder);
+  generateCombinedHandler(Object.keys(groupByEntity), targetFolder);
 
   return {
     codeList,
@@ -47,18 +46,18 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   };
 }
 
-async function generateCombinedHandler(entityList: string[], targetFolder: string, fileExt: FileExtension) {
+async function generateCombinedHandler(entityList: string[], targetFolder: string) {
   const combinedHandlers = combineHandlers(entityList);
-  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index${fileExt}`), combinedHandlers);
+  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index.ts`), combinedHandlers);
 }
 
-function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string, fileExt: FileExtension) {
+function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string) {
   const generateNodeEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `node${fileExt}`), nodeIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `node.ts`), nodeIntegration);
   const generateBrowserEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `browser${fileExt}`), browserIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `browser.ts`), browserIntegration);
   const generateReactNativeEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `native${fileExt}`), reactNativeIntegration);
+    writeFile(path.resolve(process.cwd(), targetFolder, `native.ts`), reactNativeIntegration);
 
   const config = {
     next: [generateNodeEnv, generateBrowserEnv],
@@ -71,12 +70,12 @@ function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: st
   generate.forEach(fn => fn());
 }
 
-async function generateHandlers(codeList: Record<string, string | null>, targetFolder: string, fileExt: FileExtension) {
+async function generateHandlers(codeList: Record<string, string | null>, targetFolder: string) {
   await Promise.all(Object.entries(codeList).map(async ([entity, code]) => {
     if (!code) return
 
     await writeFile(
-      path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers${fileExt}`),
+      path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers.ts`),
       code,
     );
   }));

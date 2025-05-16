@@ -7,11 +7,11 @@ const getImportsCode = () => {
   return imports.join('\n');
 };
 
-const withApiCounterCode = (options: ProgrammaticOptions) => `
+const withApiCounterCode = () => `
 // Map to store counters for each API endpoint
-const apiCounters = new Map${options.typescript ? '<string, number>' : ''}();
+const apiCounters = new Map<string, number>();
 
-const next = (apiKey${options.typescript ? ': string' : ''}) => {
+const next = (apiKey: string) => {
   let currentCount = apiCounters.get(apiKey) ?? 0;
   if (currentCount === Number.MAX_SAFE_INTEGER - 1) {
     currentCount = 0;
@@ -40,7 +40,7 @@ faker.seed(1);
 const baseURL = '${baseURL}';
 ${options.static ? '' : `const MAX_ARRAY_LENGTH = ${options?.maxArrayLength ?? 20};`}
 
-${withApiCounterCode(options)}
+${withApiCounterCode()}
 
 export const ${entity}Handlers = [
   ${transformToHandlerCode(operationCollection)}
