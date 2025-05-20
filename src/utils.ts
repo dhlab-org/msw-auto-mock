@@ -3,43 +3,17 @@ import path from 'path';
 import camelCase from 'lodash/camelCase';
 import fs from 'fs/promises';
 
-const EXTENSION_TO_PARSER: Record<string, string> = {
-  ts: 'typescript',
-  tsx: 'typescript',
-  js: 'babel',
-  jsx: 'babel',
-  'js.flow': 'flow',
-  flow: 'flow',
-  gql: 'graphql',
-  graphql: 'graphql',
-  css: 'postcss',
-  scss: 'postcss',
-  less: 'postcss',
-  stylus: 'postcss',
-  markdown: 'markdown',
-  md: 'markdown',
-  json: 'json',
-};
+async function prettify(content: string): Promise<string> {
+  const config = await prettier.resolveConfig(process.cwd(), {
+    useCache: true,
+    editorconfig: true,
+  });
 
-async function prettify(filePath: string | null, content: string): Promise<string> {
-  let config = null;
-  let parser = 'typescript';
-
-  if (filePath) {
-    const fileExtension = path.extname(filePath).slice(1);
-    parser = EXTENSION_TO_PARSER[fileExtension];
-    config = await prettier.resolveConfig(process.cwd(), {
-      useCache: true,
-      editorconfig: true,
-    });
-  }
 
   try {
     return prettier.format(content, {
-      parser,
+      parser: 'typescript',
       ...config,
-
-      // disable plugins
       plugins: [],
     });
   } catch (e) {
@@ -63,7 +37,7 @@ export const isValidRegExp = (regExpCandidate: string) => {
 };
 
 export const writeFile = async (filePath: string, content: string) => {
-  const prettifiedContent = await prettify(filePath, content);
+  const prettifiedContent = await prettify(content);
   const directory = path.dirname(filePath);
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(filePath, prettifiedContent);
