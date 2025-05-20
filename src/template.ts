@@ -1,17 +1,21 @@
 import { ProgrammaticOptions } from './types';
 import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions } from './transform';
 
-const getImportsCode = () => {
-  const imports = [`import { HttpResponse, http } from 'msw';`, `import { faker } from '@faker-js/faker';`];
+const getImportsCode = (options: ProgrammaticOptions) => {
+  const imports = [
+    `import { HttpResponse, http, type HttpResponseResolver  } from 'msw';`, 
+    `import { faker } from '@faker-js/faker';`,
+    `import { controllers } from '${options?.controllerPath ?? '@/app/mocks/controllers'}';`
+  ];
 
   return imports.join('\n');
 };
 
-const withApiCounterCode = (options: ProgrammaticOptions) => `
+const withApiCounterCode = () => `
 // Map to store counters for each API endpoint
-const apiCounters = new Map${options.typescript ? '<string, number>' : ''}();
+const apiCounters = new Map<string, number>();
 
-const next = (apiKey${options.typescript ? ': string' : ''}) => {
+const next = (apiKey: string) => {
   let currentCount = apiCounters.get(apiKey) ?? 0;
   if (currentCount === Number.MAX_SAFE_INTEGER - 1) {
     currentCount = 0;
@@ -33,17 +37,17 @@ export const mockTemplate = (
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
-${getImportsCode()}
+${getImportsCode(options)}
 
 faker.seed(1);
 
 const baseURL = '${baseURL}';
 ${options.static ? '' : `const MAX_ARRAY_LENGTH = ${options?.maxArrayLength ?? 20};`}
 
-${withApiCounterCode(options)}
+${withApiCounterCode()}
 
 export const ${entity}Handlers = [
-  ${transformToHandlerCode(operationCollection, options)}
+  ${transformToHandlerCode(operationCollection)}
 ];
 
 ${transformToGenerateResultFunctions(operationCollection, baseURL, options)}

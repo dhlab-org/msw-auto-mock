@@ -33,7 +33,7 @@ export function transformToGenerateResultFunctions(
   operationCollection: OperationCollection,
   baseURL: string,
   options?: ProgrammaticOptions,
-): string {
+) {
   const context = {
     faker,
     MAX_STRING_LENGTH,
@@ -55,6 +55,16 @@ export function transformToGenerateResultFunctions(
           if (!r.responses) {
             return;
           }
+
+          const isCustomResponse = Object.keys(options?.controllers ?? {}).includes(name);
+          if(isCustomResponse) {
+            return [
+              `export function ${name}(info: Parameters<HttpResponseResolver>[0]) {`,
+              `  return controllers.${name}(info);`,
+              `};\n`,
+            ].join('\n');
+          }
+
           const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
           const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
           if (options?.static) {
@@ -73,22 +83,32 @@ export function transformToGenerateResultFunctions(
     .join('\n');
 }
 
-export function transformToHandlerCode(operationCollection: OperationCollection, options: ProgrammaticOptions): string {
+export function transformToHandlerCode(operationCollection: OperationCollection, ): string {
   return operationCollection
     .map(op => {
-      return `http.${op.verb}(\`\${baseURL}${op.path}\`, async () => {
+      return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
         const resultArray = [${op.response.map(response => {
           const identifier = getResIdentifierName(response);
-          const result =
-            parseInt(response?.code!) === 204
-              ? `[undefined, { status: ${parseInt(response?.code!)} }]`
-              : `[${identifier ? `${identifier}()` : 'undefined'}, { status: ${parseInt(response?.code!)} }]`;
+          const status = parseInt(response?.code!);
+          const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
+          const result = `{
+            status: ${status},
+            responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
+            body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
+          }`
 
           return result;
         })}];
 
-          return HttpResponse.json(...resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length])
-        }),\n`;
+        const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length]
+        
+        return new HttpResponse(JSON.stringify(selectedResult.body), {
+          status: selectedResult.status,
+          headers: {
+            'Content-Type': selectedResult.responseType
+          }
+        })
+      }),\n`;
     })
     .join('  ')
     .trimEnd();
