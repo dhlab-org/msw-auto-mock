@@ -5,6 +5,8 @@ import { camelCase } from 'es-toolkit/string';
 import { faker } from '@faker-js/faker';
 import { ProgrammaticOptions } from './types';
 import { isValidRegExp } from './utils';
+import { match, P } from 'ts-pattern';
+import { compact } from 'lodash';
 
 const MAX_STRING_LENGTH = 42;
 
@@ -59,7 +61,7 @@ export function transformToGenerateResultFunctions(
           }
 
           const isCustomResponse = Object.keys(options?.controllers ?? {}).includes(name);
-          if(isCustomResponse) {
+          if (isCustomResponse) {
             return [
               `export function ${name}(info: Parameters<HttpResponseResolver>[0]) {`,
               `  return controllers.${name}(info);`,
@@ -85,7 +87,7 @@ export function transformToGenerateResultFunctions(
     .join('\n');
 }
 
-export function transformToHandlerCode(operationCollection: OperationCollection, ): string {
+export function transformToHandlerCode(operationCollection: OperationCollection): string {
   return operationCollection
     .map(op => {
       return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
@@ -97,7 +99,7 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
             status: ${status},
             responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
             body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
-          }`
+          }`;
 
           return result;
         })}];
@@ -117,9 +119,64 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
 }
 
 export function transformToControllersType(operationCollectionList: OperationCollection) {
- console.log(operationCollectionList)
-}
+  const controllers: Array<{
+    identifierName: string;
+    pathParams: string;
+    requestBodyType: string;
+    responseBodyType: string;
+  }> = [];
 
+  for (const op of operationCollectionList) {
+    const requestDtoTypeName = match(op.request)
+      .with(
+        { content: { ['application/json']: { schema: { $ref: P.string } } } },
+        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
+      )
+      // TODO: 추후에 다른 타입도 지원해야 함
+      .otherwise(() => 'null');
+
+    const mappingType = {
+      integer: 'number',
+      string: 'string',
+      boolean: 'boolean',
+      object: 'object',
+      number: 'number',
+    };
+
+    const pathParamsTypeContents = compact(
+      match(op.parameters)
+        .with(
+          P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
+          p => p.filter(p => p.in === 'path').map(p => `${p.name}: ${mappingType[p.schema.type]}`),
+        )
+        // @TODO 다른 타입도 지원해야 함
+        .otherwise(() => []),
+    ).join(',\n');
+
+    const pathParamsInlineType = `{${pathParamsTypeContents}}`;
+
+    for (const response of op.response) {
+      const responseBodyTypeName = match(response.responses)
+        .with({ 'application/json': { title: P.string } }, r => `${r['application/json'].title}Dto`)
+        .otherwise(() => 'null');
+
+      controllers.push({
+        identifierName: getResIdentifierName(response),
+        pathParams: pathParamsInlineType,
+        requestBodyType: requestDtoTypeName,
+        responseBodyType: responseBodyTypeName,
+      });
+    }
+  }
+
+  return controllers
+    .map(controller => {
+      return `
+    ${controller.identifierName}: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}, ${controller.responseBodyType}>>[0];
+    `;
+    })
+    .join('\n');
+}
 
 export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObject, key?: string): string {
   if (!jsonSchema) {
