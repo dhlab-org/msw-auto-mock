@@ -1,5 +1,5 @@
 import { ProgrammaticOptions } from './types';
-import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions } from './transform';
+import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions, transformToControllersType } from './transform';
 
 const getImportsCode = (options: ProgrammaticOptions) => {
   const imports = [
@@ -84,4 +84,18 @@ export const combineHandlers = (entityList: string[]) => {
     ]`
 
   return [handlersImport, combineHandlers].join('\n\n')
+}
+
+export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
+  const dtoTypeImport = '모든 dto 가져오기';
+
+  const template = `
+  ${dtoTypeImport}
+  
+  export type T${entity}Controllers = {
+    ${transformToControllersType(operationCollectionList)}
+  }
+  `
+
+  return template
 }

@@ -18,6 +18,8 @@ export interface Operation {
   verb: string;
   path: string;
   response: ResponseMap[];
+  request: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
 }
 
 export type OperationCollection = Operation[];
@@ -113,6 +115,11 @@ export function transformToHandlerCode(operationCollection: OperationCollection,
     .join('  ')
     .trimEnd();
 }
+
+export function transformToControllersType(operationCollectionList: OperationCollection) {
+ console.log(operationCollectionList)
+}
+
 
 export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObject, key?: string): string {
   if (!jsonSchema) {
