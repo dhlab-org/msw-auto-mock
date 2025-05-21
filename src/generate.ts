@@ -61,12 +61,12 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 }
 
 async function generateControllersType(controllersTypeList: {entity: string, content: string}[], targetFolder: string) {
-  const combinedContent = '모든 컨트롤러 타입 합치기'
+  // const combinedContent = '모든 컨트롤러 타입 합치기'
 
   await Promise.all(controllersTypeList.map(async ({entity, content}) => {
     await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`), content);
   }));
-  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combinedContent);
+  // await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combinedContent);
 }
 
 async function generateCombinedHandler(entityList: string[], targetFolder: string) {
@@ -128,6 +128,7 @@ type OperationDefinition = {
   id: string;
   requests: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
+  operationId: OpenAPIV3.OperationObject['operationId'];
 };
 
 function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition[] {
@@ -145,6 +146,7 @@ function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition
               responses: operation.responses,
               requests: operation.requestBody,
               parameters: operation.parameters,
+              operationId: operation.operationId,
             };
           }),
   );
@@ -187,7 +189,7 @@ function codeFilter(operation: OperationDefinition, options: ProgrammaticOptions
 }
 
 function toOperation(definition: OperationDefinition, apiGen: ApiGenerator): Operation {
-  const { verb, path, responses, id, requests, parameters } = definition;
+  const { verb, path, responses, id, requests, parameters, operationId } = definition;
 
   const responseMap = Object.entries(responses).map(([code, response]) => {
     const content = apiGen.resolve(response).content;
@@ -220,6 +222,7 @@ function toOperation(definition: OperationDefinition, apiGen: ApiGenerator): Ope
     response: responseMap,
     request: requests,
     parameters: parameters,
+    operationId: operationId,
   };
 }
 

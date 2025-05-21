@@ -22,6 +22,7 @@ export interface Operation {
   response: ResponseMap[];
   request: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
+  operationId: OpenAPIV3.OperationObject['operationId'];
 }
 
 export type OperationCollection = Operation[];
@@ -147,21 +148,24 @@ export function transformToControllersType(operationCollectionList: OperationCol
       match(op.parameters)
         .with(
           P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
-          p => p.filter(p => p.in === 'path').map(p => `${p.name}: ${mappingType[p.schema.type]}`),
+          p => p.filter(p => p.in === 'path').map(p => `${p.name}: string`),
         )
         // @TODO 다른 타입도 지원해야 함
         .otherwise(() => []),
     ).join(',\n');
 
-    const pathParamsInlineType = `{${pathParamsTypeContents}}`;
+    const pathParamsInlineType = pathParamsTypeContents ? `{${pathParamsTypeContents}}` : 'Record<string, never>';
 
     for (const response of op.response) {
       const responseBodyTypeName = match(response.responses)
-        .with({ 'application/json': { title: P.string } }, r => `${r['application/json'].title}Dto`)
+        .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
+        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto`)
         .otherwise(() => 'null');
 
+      const identifierName = getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
+
       controllers.push({
-        identifierName: getResIdentifierName(response),
+        identifierName,
         pathParams: pathParamsInlineType,
         requestBodyType: requestDtoTypeName,
         responseBodyType: responseBodyTypeName,

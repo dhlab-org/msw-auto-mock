@@ -87,7 +87,8 @@ export const combineHandlers = (entityList: string[]) => {
 }
 
 export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
-  const dtoTypeImport = '모든 dto 가져오기';
+  //TODO: 모든 dto 가져오기
+  const dtoTypeImport = '';
 
   const template = `
   ${dtoTypeImport}
