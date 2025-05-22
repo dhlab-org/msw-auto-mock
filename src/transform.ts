@@ -185,7 +185,7 @@ export function transformToControllersType(operationCollectionList: OperationCol
     for (const response of op.response) {
       const responseBodyTypeName = match(response.responses)
         .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
-        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto`)
+        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto[]`)
         .otherwise(() => 'null');
 
       const identifierName = getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
