@@ -1,15 +1,15 @@
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
-import { TOptions } from '../types';
+import { TOperation, TOptions } from '../types';
 import { camelCase } from 'es-toolkit';
 import { ResponseMap } from '../transform';
 import { toExpressLikePath } from '../utils';
 
-interface IOperationGenerator {
-  generate(): Operation[];
+interface IOperation {
+  collection(): TOperation[];
 }
 
-class OperationGenerator implements IOperationGenerator {
+class Operation implements IOperation {
   private readonly apiDoc: OpenAPIV3.Document;
   private readonly options: TOptions;
   private readonly apiGenerator: ApiGenerator;
@@ -20,7 +20,7 @@ class OperationGenerator implements IOperationGenerator {
     this.apiGenerator = new ApiGenerator(apiDoc, {});
   }
 
-  generate() {
+  collection() {
     const operationDefinitions = this.#getOperationDefinitions();
     return operationDefinitions
       .filter(op => this.#operationFilter(op))
@@ -28,7 +28,7 @@ class OperationGenerator implements IOperationGenerator {
       .map(definition => this.#toOperation(definition));
   }
 
-  #getOperationDefinitions(): OperationDefinition[] {
+  #getOperationDefinitions(): TOperationDefinition[] {
     const operationKeys = Object.values(OpenAPIV3.HttpMethods) as OpenAPIV3.HttpMethods[];
     return Object.entries(this.apiDoc.paths).flatMap(([path, pathItem]) =>
       !pathItem
@@ -50,7 +50,7 @@ class OperationGenerator implements IOperationGenerator {
     );
   }
 
-  #operationFilter(operation: OperationDefinition): boolean {
+  #operationFilter(operation: TOperationDefinition): boolean {
     const includes = this.options?.includes?.split(',') ?? null;
     const excludes = this.options?.excludes?.split(',') ?? null;
 
@@ -63,7 +63,7 @@ class OperationGenerator implements IOperationGenerator {
     return true;
   }
 
-  #codeFilter(operation: OperationDefinition): OperationDefinition {
+  #codeFilter(operation: TOperationDefinition): TOperationDefinition {
     const rawCodes = this.options?.codes;
 
     const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
@@ -86,7 +86,7 @@ class OperationGenerator implements IOperationGenerator {
     };
   }
 
-  #toOperation(definition: OperationDefinition): Operation {
+  #toOperation(definition: TOperationDefinition): TOperation {
     const { verb, path, responses, id, requests, parameters, operationId } = definition;
 
     const responseMap = Object.entries(responses).map(([code, response]) => {
@@ -125,25 +125,16 @@ class OperationGenerator implements IOperationGenerator {
   }
 }
 
-export { OperationGenerator };
+export { Operation };
 
-type OperationDefinition = {
+type TOperationDefinition = {
   verb: string;
   path: string;
-  responses: OpenAPIV3.ResponsesObject;
-  id: string;
   requests: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
   operationId: OpenAPIV3.OperationObject['operationId'];
-};
-
-type Operation = {
-  verb: string;
-  path: string;
-  response: ResponseMap[];
-  request: OpenAPIV3.OperationObject['requestBody'];
-  parameters: OpenAPIV3.OperationObject['parameters'];
-  operationId: OpenAPIV3.OperationObject['operationId'];
+  id: string;
+  responses: OpenAPIV3.ResponsesObject;
 };
 
 const resolvingRefs: string[] = [];
