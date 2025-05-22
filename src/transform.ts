@@ -186,6 +186,7 @@ export function transformToControllersType(operationCollectionList: OperationCol
       const responseBodyTypeName = match(response.responses)
         .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
         .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto[]`)
+        .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
         .otherwise(() => 'null');
 
       const identifierName = getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
