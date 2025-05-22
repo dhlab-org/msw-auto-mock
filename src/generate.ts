@@ -7,10 +7,9 @@ import { camelCase } from 'es-toolkit/string';
 import { getV3Doc } from './swagger';
 import { toExpressLikePath, writeFile } from './utils';
 import { Operation } from './transform';
-import { browserIntegration, combineHandlers, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
+import { browserIntegration, combineControllersTypeTemplate, combineHandlers, controllersTypeTemplate, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
 import { ProgrammaticOptions } from './types';
-import { groupBy } from 'lodash';
-import { isString, mapValues } from 'es-toolkit';
+import { compact, groupBy, isString, mapValues } from 'es-toolkit';
 
 export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
@@ -29,6 +28,8 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   const apiDoc = await getV3Doc(spec);
   const operationCollection = generateOperationCollection(apiDoc, options);
 
+  await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
+
   const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
   const codeList = mapValues(groupByEntity, (operationCollection, entity) => {
@@ -39,6 +40,17 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   generateEnvironmentFiles(options, targetFolder);
   generateCombinedHandler(Object.keys(groupByEntity), targetFolder);
 
+  const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
+    if (!isString(entity)) return null;
+    
+    return {
+      entity,
+      content: controllersTypeTemplate(entity, operationCollection)
+    }
+  })
+
+  await generateControllersType(compact(Object.values(controllersTypeList)), targetFolder);
+
   return {
     codeList,
     operationCollection,
@@ -46,6 +58,13 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
     targetFolder,
     outputFolder: targetFolder,
   };
+}
+
+async function generateControllersType(controllersTypeList: {entity: string, content: string}[], targetFolder: string) {
+  await Promise.all(controllersTypeList.map(async ({entity, content}) => {
+    await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`), content);
+  }));
+  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combineControllersTypeTemplate(controllersTypeList.map(({entity}) => entity)));
 }
 
 async function generateCombinedHandler(entityList: string[], targetFolder: string) {
@@ -105,6 +124,9 @@ type OperationDefinition = {
   verb: string;
   responses: OpenAPIV3.ResponsesObject;
   id: string;
+  requests: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
+  operationId: OpenAPIV3.OperationObject['operationId'];
 };
 
 function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition[] {
@@ -120,6 +142,9 @@ function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition
               verb,
               id,
               responses: operation.responses,
+              requests: operation.requestBody,
+              parameters: operation.parameters,
+              operationId: operation.operationId,
             };
           }),
   );
@@ -162,7 +187,7 @@ function codeFilter(operation: OperationDefinition, options: ProgrammaticOptions
 }
 
 function toOperation(definition: OperationDefinition, apiGen: ApiGenerator): Operation {
-  const { verb, path, responses, id } = definition;
+  const { verb, path, responses, id, requests, parameters, operationId } = definition;
 
   const responseMap = Object.entries(responses).map(([code, response]) => {
     const content = apiGen.resolve(response).content;
@@ -193,6 +218,9 @@ function toOperation(definition: OperationDefinition, apiGen: ApiGenerator): Ope
     verb,
     path: toExpressLikePath(path),
     response: responseMap,
+    request: requests,
+    parameters: parameters,
+    operationId: operationId,
   };
 }
 

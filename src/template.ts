@@ -1,5 +1,6 @@
 import { ProgrammaticOptions } from './types';
-import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions } from './transform';
+import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions, transformToControllersType, transformToDtoImportCode } from './transform';
+import { pascalCase } from 'es-toolkit';
 
 const getImportsCode = (options: ProgrammaticOptions) => {
   const imports = [
@@ -84,4 +85,31 @@ export const combineHandlers = (entityList: string[]) => {
     ]`
 
   return [handlersImport, combineHandlers].join('\n\n')
+}
+
+export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
+  const template = `
+  import type { HttpResponseResolver } from "msw";
+  ${transformToDtoImportCode(operationCollectionList)}
+  
+  export type ${pascalCase(`T_${entity}_Controllers`)} = {
+    ${transformToControllersType(operationCollectionList)}
+  }
+  `
+
+  return template
+}
+
+export const combineControllersTypeTemplate = (entityList: string[]) => {
+  const template = `
+  ${entityList.map((entity) => {
+    return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`
+  }).join('\n')}
+
+  export type TControllers = ${entityList.map((entity) => {
+    return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`
+  }).join(' | ')}
+  `
+
+  return template
 }
