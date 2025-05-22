@@ -1,6 +1,5 @@
-import { TOptions } from './types';
+import { TOperation, TOptions } from './types';
 import {
-  OperationCollection,
   transformToHandlerCode,
   transformToGenerateResultFunctions,
   transformToControllersType,
@@ -33,7 +32,7 @@ const next = (apiKey: string) => {
 `;
 
 export const mockTemplate = (
-  operationCollection: OperationCollection,
+  operationCollection: TOperation[],
   baseURL: string,
   options: TOptions,
   entity: string,
@@ -60,13 +59,13 @@ export const ${entity}Handlers = [
 ${transformToGenerateResultFunctions(operationCollection, baseURL, options)}
 `;
 
-export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
+export const controllersTypeTemplate = (entity: string, operations: TOperation[]) => {
   const template = `
   import type { HttpResponseResolver } from "msw";
-  ${transformToDtoImportCode(operationCollectionList)}
+  ${transformToDtoImportCode(operations)}
   
   export type ${pascalCase(`T_${entity}_Controllers`)} = {
-    ${transformToControllersType(operationCollectionList)}
+    ${transformToControllersType(operations)}
   }
   `;
 

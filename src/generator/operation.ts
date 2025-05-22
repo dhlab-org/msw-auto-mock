@@ -1,8 +1,7 @@
+import { camelCase } from 'es-toolkit';
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import { TOperation, TOptions } from '../types';
-import { camelCase } from 'es-toolkit';
-import { ResponseMap } from '../transform';
 import { toExpressLikePath } from '../utils';
 
 interface IOperation {

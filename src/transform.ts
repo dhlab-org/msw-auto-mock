@@ -3,7 +3,7 @@ import { OpenAPIV3 } from 'openapi-types';
 import merge from 'lodash/merge';
 import { camelCase } from 'es-toolkit/string';
 import { faker } from '@faker-js/faker';
-import { TOptions } from './types';
+import { TOperation, TOptions } from './types';
 import { isValidRegExp } from './utils';
 import { match, P } from 'ts-pattern';
 import { compact } from 'lodash';
@@ -16,17 +16,6 @@ export interface ResponseMap {
   responses?: Record<string, OpenAPIV3.SchemaObject>;
 }
 
-export interface Operation {
-  verb: string;
-  path: string;
-  response: ResponseMap[];
-  request: OpenAPIV3.OperationObject['requestBody'];
-  parameters: OpenAPIV3.OperationObject['parameters'];
-  operationId: OpenAPIV3.OperationObject['operationId'];
-}
-
-export type OperationCollection = Operation[];
-
 export function getResIdentifierName(res: ResponseMap) {
   if (!res.id) {
     return '';
@@ -35,7 +24,7 @@ export function getResIdentifierName(res: ResponseMap) {
 }
 
 export function transformToGenerateResultFunctions(
-  operationCollection: OperationCollection,
+  operationCollection: TOperation[],
   baseURL: string,
   options?: TOptions,
 ) {
@@ -88,7 +77,7 @@ export function transformToGenerateResultFunctions(
     .join('\n');
 }
 
-export function transformToHandlerCode(operationCollection: OperationCollection): string {
+export function transformToHandlerCode(operationCollection: TOperation[]): string {
   return operationCollection
     .map(op => {
       return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
@@ -119,8 +108,8 @@ export function transformToHandlerCode(operationCollection: OperationCollection)
     .trimEnd();
 }
 
-export function transformToDtoImportCode(operationCollectionList: OperationCollection) {
-  const dtoList = operationCollectionList.reduce((dtoSet, op) => {
+export function transformToDtoImportCode(operations: TOperation[]) {
+  const dtoList = operations.reduce((dtoSet, op) => {
     const requestDtoTypeName = match(op.request)
       .with(
         { content: { ['application/json']: { schema: { $ref: P.string } } } },
@@ -151,7 +140,7 @@ export function transformToDtoImportCode(operationCollectionList: OperationColle
   return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
 }
 
-export function transformToControllersType(operationCollectionList: OperationCollection) {
+export function transformToControllersType(operations: TOperation[]) {
   const controllers: Array<{
     identifierName: string;
     pathParams: string;
@@ -159,7 +148,7 @@ export function transformToControllersType(operationCollectionList: OperationCol
     responseBodyType: string;
   }> = [];
 
-  for (const op of operationCollectionList) {
+  for (const op of operations) {
     const requestDtoTypeName = match(op.request)
       .with(
         { content: { ['application/json']: { schema: { $ref: P.string } } } },
