@@ -60,24 +60,6 @@ export const ${entity}Handlers = [
 ${transformToGenerateResultFunctions(operationCollection, baseURL, options)}
 `;
 
-export const browserIntegration = [
-  `import { setupWorker } from 'msw/browser'`,
-  `import { handlers } from './handlers'`,
-  `export const worker = setupWorker(...handlers)`,
-].join('\n');
-
-export const nodeIntegration = [
-  `import { setupServer } from 'msw/node'`,
-  `import { handlers } from './handlers'`,
-  `export const server = setupServer(...handlers)`,
-].join(`\n`);
-
-export const reactNativeIntegration = [
-  `import { setupServer } from 'msw/native'`,
-  `import { handlers } from './handlers'`,
-  `export const server = setupServer(...handlers)`,
-].join(`\n`);
-
 export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
   const template = `
   import type { HttpResponseResolver } from "msw";

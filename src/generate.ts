@@ -2,16 +2,10 @@ import { compact, groupBy, isString, mapValues } from 'es-toolkit';
 import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
 import { Handler } from './generator/handler';
+import { MSWServer } from './generator/msw-server';
 import { Operation } from './generator/operation';
 import { getV3Doc } from './swagger';
-import {
-  browserIntegration,
-  combineControllersTypeTemplate,
-  controllersTypeTemplate,
-  mockTemplate,
-  nodeIntegration,
-  reactNativeIntegration,
-} from './template';
+import { combineControllersTypeTemplate, controllersTypeTemplate, mockTemplate } from './template';
 import { TOptions } from './types';
 import { writeFile } from './utils';
 
@@ -31,8 +25,7 @@ export async function generate(options: TOptions) {
   // await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
 
   await new Handler(targetFolder, codeList, groupByEntity).generate();
-
-  generateEnvironmentFiles(options, targetFolder);
+  await new MSWServer(targetFolder, options.environment).generate();
 
   const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
     if (!isString(entity)) return null;
@@ -69,24 +62,6 @@ async function generateControllersType(
     path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`),
     combineControllersTypeTemplate(controllersTypeList.map(({ entity }) => entity)),
   );
-}
-
-function generateEnvironmentFiles(options: TOptions, targetFolder: string) {
-  const generateNodeEnv = () => writeFile(path.resolve(process.cwd(), targetFolder, `node.ts`), nodeIntegration);
-  const generateBrowserEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `browser.ts`), browserIntegration);
-  const generateReactNativeEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `native.ts`), reactNativeIntegration);
-
-  const config = {
-    next: [generateNodeEnv, generateBrowserEnv],
-    react: [generateBrowserEnv],
-    'react-native': [generateReactNativeEnv],
-    default: [generateNodeEnv, generateBrowserEnv, generateReactNativeEnv],
-  };
-
-  const generate = config[options.environment ?? 'default'];
-  generate.forEach(fn => fn());
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {

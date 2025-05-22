@@ -1,0 +1,70 @@
+import path from 'path';
+import { writeFile } from '../utils';
+import { TOptions } from '../types';
+
+interface IMSWServer {
+  generate(): Promise<void>;
+}
+
+class MSWServer implements IMSWServer {
+  private readonly targetFolder: string;
+  private readonly environment: TOptions['environment'];
+
+  constructor(targetFolder: string, environment: TOptions['environment']) {
+    this.targetFolder = targetFolder;
+    this.environment = environment;
+  }
+
+  async generate(): Promise<void> {
+    const config: Record<NonNullable<TOptions['environment']> | 'default', ServerType[]> = {
+      next: ['node', 'browser'],
+      react: ['browser'],
+      'react-native': ['native'],
+      default: ['node', 'browser', 'native'],
+    };
+
+    const environments = config[this.environment ?? 'default'];
+    await Promise.all(environments.map(env => this.#generateServer(env)));
+  }
+
+  async #generateServer(type: ServerType): Promise<void> {
+    const content = this.#getServerContent(type);
+    await writeFile(path.resolve(process.cwd(), this.targetFolder, `${type}.ts`), content);
+  }
+
+  #getServerContent(type: ServerType): string {
+    const config: Record<ServerType, ServerConfig> = {
+      node: {
+        import: 'setupServer',
+        from: 'msw/node',
+        export: 'server',
+      },
+      browser: {
+        import: 'setupWorker',
+        from: 'msw/browser',
+        export: 'worker',
+      },
+      native: {
+        import: 'setupServer',
+        from: 'msw/native',
+        export: 'server',
+      },
+    };
+
+    const { import: importName, from, export: exportName } = config[type];
+    return [
+      `import { ${importName} } from '${from}'`,
+      `import { handlers } from './handlers'`,
+      `export const ${exportName} = ${importName}(...handlers)`,
+    ].join('\n');
+  }
+}
+
+export { MSWServer };
+
+type ServerType = 'node' | 'browser' | 'native';
+type ServerConfig = {
+  import: string;
+  from: string;
+  export: string;
+};

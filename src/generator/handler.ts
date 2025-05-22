@@ -3,7 +3,7 @@ import { TOperation } from '../types';
 import { writeFile } from '../utils';
 
 interface IHandler {
-  generate(): void;
+  generate(): Promise<void>;
 }
 
 class Handler implements IHandler {
