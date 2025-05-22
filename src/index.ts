@@ -1,9 +1,9 @@
 import { groupBy } from 'es-toolkit';
 import path from 'path';
-import { ControllerType } from './generator/controller-type';
-import { Handler } from './generator/handler';
-import { MSWServer } from './generator/msw-server';
-import { Operation } from './generator/operation';
+import { ControllerType } from './controller-type';
+import { Handler } from './handler';
+import { MSWServer } from './msw-server';
+import { Operation } from './operation';
 import { Swagger } from './swagger';
 import { TOptions } from './types';
 

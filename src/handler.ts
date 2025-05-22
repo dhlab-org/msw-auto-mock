@@ -1,9 +1,9 @@
 import { isString, mapValues } from 'es-toolkit';
 import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
-import { transformToGenerateResultFunctions, transformToHandlerCode } from '../transform';
-import { TOperation, TOptions } from '../types';
-import { writeFile } from '../utils';
+import { transformToGenerateResultFunctions, transformToHandlerCode } from './transform';
+import { TOperation, TOptions } from './types';
+import { writeFile } from './utils';
 
 interface IHandler {
   generate(targetFolder: string): Promise<void>;

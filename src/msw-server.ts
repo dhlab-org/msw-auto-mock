@@ -1,6 +1,6 @@
 import path from 'path';
-import { writeFile } from '../utils';
-import { TOptions } from '../types';
+import { writeFile } from './utils';
+import { TOptions } from './types';
 
 interface IMSWServer {
   generate(targetFolder: string): Promise<void>;

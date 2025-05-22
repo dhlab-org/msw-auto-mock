@@ -1,8 +1,8 @@
 import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
 import path from 'path';
-import { transformToControllersType, transformToDtoImportCode } from '../transform';
-import { TOperation } from '../types';
-import { writeFile } from '../utils';
+import { transformToControllersType, transformToDtoImportCode } from './transform';
+import { TOperation } from './types';
+import { writeFile } from './utils';
 
 interface IControllerType {
   generate(targetFolder: string): Promise<void>;
