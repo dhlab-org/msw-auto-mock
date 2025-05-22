@@ -202,7 +202,7 @@ export function transformToControllersType(operationCollectionList: OperationCol
   return controllers
     .map(controller => {
       return `
-    ${controller.identifierName}: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}, ${controller.responseBodyType}>>[0];
+    ${controller.identifierName}: (info: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}>>[0])=> ${controller.responseBodyType} | Promise<${controller.responseBodyType}>;
     `;
     })
     .join('\n');

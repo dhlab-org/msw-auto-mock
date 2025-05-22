@@ -7,7 +7,7 @@ import { camelCase } from 'es-toolkit/string';
 import { getV3Doc } from './swagger';
 import { toExpressLikePath, writeFile } from './utils';
 import { Operation } from './transform';
-import { browserIntegration, combineHandlers, controllersTypeTemplate, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
+import { browserIntegration, combineControllersTypeTemplate, combineHandlers, controllersTypeTemplate, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
 import { ProgrammaticOptions } from './types';
 import { compact, groupBy, isString, mapValues } from 'es-toolkit';
 
@@ -61,12 +61,10 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 }
 
 async function generateControllersType(controllersTypeList: {entity: string, content: string}[], targetFolder: string) {
-  // const combinedContent = '모든 컨트롤러 타입 합치기'
-
   await Promise.all(controllersTypeList.map(async ({entity, content}) => {
     await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`), content);
   }));
-  // await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combinedContent);
+  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combineControllersTypeTemplate(controllersTypeList.map(({entity}) => entity)));
 }
 
 async function generateCombinedHandler(entityList: string[], targetFolder: string) {
