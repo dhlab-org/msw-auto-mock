@@ -17,7 +17,7 @@ export async function generate(options: TOptions) {
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new Handler(options, groupByEntity).generate(targetFolder);
+  await new Handler(options, groupByEntity, apiDoc).generate(targetFolder);
   await new MSWServer(options.environment).generate(targetFolder);
   await new ControllerType().generate(targetFolder);
 
