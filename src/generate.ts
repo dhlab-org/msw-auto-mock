@@ -1,16 +1,17 @@
 import { compact, groupBy, isString, mapValues } from 'es-toolkit';
 import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
+import { ControllerType } from './generator/controller-type';
 import { Handler } from './generator/handler';
 import { MSWServer } from './generator/msw-server';
 import { Operation } from './generator/operation';
-import { getV3Doc } from './swagger';
+import { Swagger } from './swagger';
 import { combineControllersTypeTemplate, controllersTypeTemplate, mockTemplate } from './template';
 import { TOptions } from './types';
 import { writeFile } from './utils';
 
 export async function generate(options: TOptions) {
-  const apiDoc = await getV3Doc(options.input);
+  const apiDoc = await new Swagger(options.input).document;
   const operationCollection = new Operation(apiDoc, options).collection();
   const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
 
@@ -22,10 +23,9 @@ export async function generate(options: TOptions) {
     return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
   });
 
-  // await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
-
   await new Handler(codeList, groupByEntity).generate(targetFolder);
   await new MSWServer(options.environment).generate(targetFolder);
+  await new ControllerType().generate(targetFolder);
 
   const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
     if (!isString(entity)) return null;
