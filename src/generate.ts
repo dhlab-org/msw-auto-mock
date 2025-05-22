@@ -1,12 +1,11 @@
 import { compact, groupBy, isString, mapValues } from 'es-toolkit';
-import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
 import { ControllerType } from './generator/controller-type';
 import { Handler } from './generator/handler';
 import { MSWServer } from './generator/msw-server';
 import { Operation } from './generator/operation';
 import { Swagger } from './swagger';
-import { combineControllersTypeTemplate, controllersTypeTemplate, mockTemplate } from './template';
+import { combineControllersTypeTemplate, controllersTypeTemplate } from './template';
 import { TOptions } from './types';
 import { writeFile } from './utils';
 
@@ -17,13 +16,8 @@ export async function generate(options: TOptions) {
 
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
-  const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
 
-  const codeList = mapValues(groupByEntity, (operationCollection, entity) => {
-    return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
-  });
-
-  await new Handler(codeList, groupByEntity).generate(targetFolder);
+  await new Handler(options, groupByEntity).generate(targetFolder);
   await new MSWServer(options.environment).generate(targetFolder);
   await new ControllerType().generate(targetFolder);
 
@@ -38,10 +32,7 @@ export async function generate(options: TOptions) {
   await generateControllersType(compact(Object.values(controllersTypeList)), targetFolder);
 
   return {
-    codeList,
     operationCollection,
-    baseURL,
-    targetFolder,
     outputFolder: targetFolder,
   };
 }
@@ -62,19 +53,4 @@ async function generateControllersType(
     path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`),
     combineControllersTypeTemplate(controllersTypeList.map(({ entity }) => entity)),
   );
-}
-
-function getServerUrl(apiDoc: OpenAPIV3.Document) {
-  let server = apiDoc.servers?.at(0);
-  let url = '';
-  if (server) {
-    url = server.url;
-  }
-  if (server?.variables) {
-    Object.entries(server.variables).forEach(([key, value]) => {
-      url = url.replace(`{${key}}`, value.default);
-    });
-  }
-
-  return url;
 }

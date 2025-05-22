@@ -16,10 +16,10 @@ class Swagger implements ISwagger {
   }
 
   get document(): Promise<OpenAPIV3.Document> {
-    return this.#bundle();
+    return this.#openApiV3Doc();
   }
 
-  async #bundle(): Promise<OpenAPIV3.Document> {
+  async #openApiV3Doc(): Promise<OpenAPIV3.Document> {
     const doc = await SwaggerParser.bundle(this.rawFile);
     const isOpenApiV3 = 'openapi' in doc && doc.openapi.startsWith('3');
 
