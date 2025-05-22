@@ -1,0 +1,207 @@
+import ApiGenerator, { isReference } from 'oazapfts/generate';
+import { OpenAPIV3 } from 'openapi-types';
+import { TOptions } from '../types';
+import { camelCase } from 'es-toolkit';
+import { ResponseMap } from '../transform';
+import { toExpressLikePath } from '../utils';
+
+interface IOperationGenerator {
+  generate(): Operation[];
+}
+
+class OperationGenerator implements IOperationGenerator {
+  private readonly apiDoc: OpenAPIV3.Document;
+  private readonly options: TOptions;
+  private readonly apiGenerator: ApiGenerator;
+
+  constructor(apiDoc: OpenAPIV3.Document, options: TOptions) {
+    this.apiDoc = apiDoc;
+    this.options = options;
+    this.apiGenerator = new ApiGenerator(apiDoc, {});
+  }
+
+  generate() {
+    const operationDefinitions = this.#getOperationDefinitions();
+    return operationDefinitions
+      .filter(op => this.#operationFilter(op))
+      .map(op => this.#codeFilter(op))
+      .map(definition => this.#toOperation(definition));
+  }
+
+  #getOperationDefinitions(): OperationDefinition[] {
+    const operationKeys = Object.values(OpenAPIV3.HttpMethods) as OpenAPIV3.HttpMethods[];
+    return Object.entries(this.apiDoc.paths).flatMap(([path, pathItem]) =>
+      !pathItem
+        ? []
+        : Object.entries(pathItem)
+            .filter((arg): arg is [string, OpenAPIV3.OperationObject] => operationKeys.includes(arg[0] as any))
+            .map(([verb, operation]) => {
+              const id = camelCase(operation.operationId ?? verb + '/' + path);
+              return {
+                path,
+                verb,
+                id,
+                responses: operation.responses,
+                requests: operation.requestBody,
+                parameters: operation.parameters,
+                operationId: operation.operationId,
+              };
+            }),
+    );
+  }
+
+  #operationFilter(operation: OperationDefinition): boolean {
+    const includes = this.options?.includes?.split(',') ?? null;
+    const excludes = this.options?.excludes?.split(',') ?? null;
+
+    if (includes && !includes.includes(operation.path)) {
+      return false;
+    }
+    if (excludes?.includes(operation.path)) {
+      return false;
+    }
+    return true;
+  }
+
+  #codeFilter(operation: OperationDefinition): OperationDefinition {
+    const rawCodes = this.options?.codes;
+
+    const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
+
+    const responses = Object.entries(operation.responses)
+      .filter(([code]) => {
+        if (codes && !codes.includes(code)) {
+          return false;
+        }
+        return true;
+      })
+      .map(([code, response]) => ({
+        [code]: response,
+      }))
+      .reduce((acc, curr) => Object.assign(acc, curr), {} as OpenAPIV3.ResponsesObject);
+
+    return {
+      ...operation,
+      responses,
+    };
+  }
+
+  #toOperation(definition: OperationDefinition): Operation {
+    const { verb, path, responses, id, requests, parameters, operationId } = definition;
+
+    const responseMap = Object.entries(responses).map(([code, response]) => {
+      const content = this.apiGenerator.resolve(response).content;
+      if (!content) {
+        return { code, id: '', responses: {} };
+      }
+
+      const resolvedResponse = Object.keys(content).reduce(
+        (resolved, type) => {
+          const schema = content[type].schema;
+          if (typeof schema !== 'undefined') {
+            resolved[type] = recursiveResolveSchema(schema, this.apiGenerator);
+          }
+
+          return resolved;
+        },
+        {} as Record<string, OpenAPIV3.SchemaObject>,
+      );
+
+      return {
+        code,
+        id,
+        responses: resolvedResponse,
+      };
+    });
+
+    return {
+      verb,
+      path: toExpressLikePath(path),
+      response: responseMap,
+      request: requests,
+      parameters: parameters,
+      operationId: operationId,
+    };
+  }
+}
+
+export { OperationGenerator };
+
+type OperationDefinition = {
+  verb: string;
+  path: string;
+  responses: OpenAPIV3.ResponsesObject;
+  id: string;
+  requests: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
+  operationId: OpenAPIV3.OperationObject['operationId'];
+};
+
+type Operation = {
+  verb: string;
+  path: string;
+  response: ResponseMap[];
+  request: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
+  operationId: OpenAPIV3.OperationObject['operationId'];
+};
+
+const resolvingRefs: string[] = [];
+
+function autoPopRefs<T>(cb: () => T) {
+  const n = resolvingRefs.length;
+  const res = cb();
+  resolvingRefs.length = n;
+  return res;
+}
+
+function resolve(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, apiGen: ApiGenerator) {
+  if (isReference(schema)) {
+    if (resolvingRefs.includes(schema.$ref)) {
+      console.warn(`circular reference for path ${[...resolvingRefs, schema.$ref].join(' -> ')} found`);
+      return {};
+    }
+    resolvingRefs.push(schema.$ref);
+  }
+  return { ...apiGen.resolve(schema) };
+}
+
+function recursiveResolveSchema(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, apiGen: ApiGenerator) {
+  return autoPopRefs(() => {
+    const resolvedSchema = resolve(schema, apiGen) as OpenAPIV3.SchemaObject;
+
+    if (resolvedSchema.type === 'array') {
+      resolvedSchema.items = resolve(resolvedSchema.items, apiGen);
+      resolvedSchema.items = recursiveResolveSchema(resolvedSchema.items, apiGen);
+    } else if (resolvedSchema.type === 'object') {
+      if (!resolvedSchema.properties && typeof resolvedSchema.additionalProperties === 'object') {
+        if (isReference(resolvedSchema.additionalProperties)) {
+          resolvedSchema.additionalProperties = recursiveResolveSchema(
+            resolve(resolvedSchema.additionalProperties, apiGen),
+            apiGen,
+          );
+        }
+      }
+
+      if (resolvedSchema.properties) {
+        resolvedSchema.properties = Object.entries(resolvedSchema.properties).reduce(
+          (resolved, [key, value]) => {
+            resolved[key] = recursiveResolveSchema(value, apiGen);
+            return resolved;
+          },
+          {} as Record<string, OpenAPIV3.SchemaObject>,
+        );
+      }
+    }
+
+    if (resolvedSchema.allOf) {
+      resolvedSchema.allOf = resolvedSchema.allOf.map(item => recursiveResolveSchema(item, apiGen));
+    } else if (resolvedSchema.oneOf) {
+      resolvedSchema.oneOf = resolvedSchema.oneOf.map(item => recursiveResolveSchema(item, apiGen));
+    } else if (resolvedSchema.anyOf) {
+      resolvedSchema.anyOf = resolvedSchema.anyOf.map(item => recursiveResolveSchema(item, apiGen));
+    }
+
+    return resolvedSchema;
+  });
+}

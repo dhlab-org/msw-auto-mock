@@ -12,13 +12,7 @@ async function generateMocks(options: TOptions) {
     throw new Error('Options parameter is required');
   }
 
-  const { input, outputDir = 'src/app/mocks', ...rest } = options;
-
-  return generate(input, {
-    input,
-    outputDir,
-    ...rest,
-  });
+  return generate(options);
 }
 
 export { generateMocks };
