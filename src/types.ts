@@ -1,6 +1,6 @@
-import { HttpResponseResolver } from "msw";
+import { HttpResponseResolver } from 'msw';
 
-export type ProgrammaticOptions<TControllers =Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
+export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
   input: string;
   outputDir?: string;
   maxArrayLength?: number;

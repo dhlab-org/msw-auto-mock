@@ -7,11 +7,19 @@ import { camelCase } from 'es-toolkit/string';
 import { getV3Doc } from './swagger';
 import { toExpressLikePath, writeFile } from './utils';
 import { Operation } from './transform';
-import { browserIntegration, combineControllersTypeTemplate, combineHandlers, controllersTypeTemplate, mockTemplate, nodeIntegration, reactNativeIntegration } from './template';
-import { ProgrammaticOptions } from './types';
+import {
+  browserIntegration,
+  combineControllersTypeTemplate,
+  combineHandlers,
+  controllersTypeTemplate,
+  mockTemplate,
+  nodeIntegration,
+  reactNativeIntegration,
+} from './template';
+import { TOptions } from './types';
 import { compact, groupBy, isString, mapValues } from 'es-toolkit';
 
-export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: ProgrammaticOptions) {
+export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options: TOptions) {
   const apiGen = new ApiGenerator(apiDoc, {});
   const operationDefinitions = getOperationDefinitions(apiDoc);
 
@@ -21,7 +29,7 @@ export function generateOperationCollection(apiDoc: OpenAPIV3.Document, options:
     .map(definition => toOperation(definition, apiGen));
 }
 
-export async function generate(spec: string, options: ProgrammaticOptions) {
+export async function generate(spec: string, options: TOptions) {
   const outputFolder = options.outputDir || './mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
@@ -30,7 +38,7 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
   await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
 
-  const groupByEntity = groupBy(operationCollection, (it)=>it.path.split('/')[1]);
+  const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
   const codeList = mapValues(groupByEntity, (operationCollection, entity) => {
     return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
@@ -42,12 +50,12 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
 
   const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
     if (!isString(entity)) return null;
-    
+
     return {
       entity,
-      content: controllersTypeTemplate(entity, operationCollection)
-    }
-  })
+      content: controllersTypeTemplate(entity, operationCollection),
+    };
+  });
 
   await generateControllersType(compact(Object.values(controllersTypeList)), targetFolder);
 
@@ -60,11 +68,22 @@ export async function generate(spec: string, options: ProgrammaticOptions) {
   };
 }
 
-async function generateControllersType(controllersTypeList: {entity: string, content: string}[], targetFolder: string) {
-  await Promise.all(controllersTypeList.map(async ({entity, content}) => {
-    await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`), content);
-  }));
-  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`), combineControllersTypeTemplate(controllersTypeList.map(({entity}) => entity)));
+async function generateControllersType(
+  controllersTypeList: { entity: string; content: string }[],
+  targetFolder: string,
+) {
+  await Promise.all(
+    controllersTypeList.map(async ({ entity, content }) => {
+      await writeFile(
+        path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`),
+        content,
+      );
+    }),
+  );
+  await writeFile(
+    path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`),
+    combineControllersTypeTemplate(controllersTypeList.map(({ entity }) => entity)),
+  );
 }
 
 async function generateCombinedHandler(entityList: string[], targetFolder: string) {
@@ -72,9 +91,8 @@ async function generateCombinedHandler(entityList: string[], targetFolder: strin
   await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index.ts`), combinedHandlers);
 }
 
-function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: string) {
-  const generateNodeEnv = () =>
-    writeFile(path.resolve(process.cwd(), targetFolder, `node.ts`), nodeIntegration);
+function generateEnvironmentFiles(options: TOptions, targetFolder: string) {
+  const generateNodeEnv = () => writeFile(path.resolve(process.cwd(), targetFolder, `node.ts`), nodeIntegration);
   const generateBrowserEnv = () =>
     writeFile(path.resolve(process.cwd(), targetFolder, `browser.ts`), browserIntegration);
   const generateReactNativeEnv = () =>
@@ -92,14 +110,13 @@ function generateEnvironmentFiles(options: ProgrammaticOptions, targetFolder: st
 }
 
 async function generateHandlers(codeList: Record<string, string | null>, targetFolder: string) {
-  await Promise.all(Object.entries(codeList).map(async ([entity, code]) => {
-    if (!code) return
+  await Promise.all(
+    Object.entries(codeList).map(async ([entity, code]) => {
+      if (!code) return;
 
-    await writeFile(
-      path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers.ts`),
-      code,
-    );
-  }));
+      await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers.ts`), code);
+    }),
+  );
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {
@@ -150,7 +167,7 @@ function getOperationDefinitions(v3Doc: OpenAPIV3.Document): OperationDefinition
   );
 }
 
-function operationFilter(operation: OperationDefinition, options: ProgrammaticOptions): boolean {
+function operationFilter(operation: OperationDefinition, options: TOptions): boolean {
   const includes = options?.includes?.split(',') ?? null;
   const excludes = options?.excludes?.split(',') ?? null;
 
@@ -163,7 +180,7 @@ function operationFilter(operation: OperationDefinition, options: ProgrammaticOp
   return true;
 }
 
-function codeFilter(operation: OperationDefinition, options: ProgrammaticOptions): OperationDefinition {
+function codeFilter(operation: OperationDefinition, options: TOptions): OperationDefinition {
   const rawCodes = options?.codes;
 
   const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;

@@ -3,7 +3,7 @@ import { OpenAPIV3 } from 'openapi-types';
 import merge from 'lodash/merge';
 import { camelCase } from 'es-toolkit/string';
 import { faker } from '@faker-js/faker';
-import { ProgrammaticOptions } from './types';
+import { TOptions } from './types';
 import { isValidRegExp } from './utils';
 import { match, P } from 'ts-pattern';
 import { compact } from 'lodash';
@@ -37,7 +37,7 @@ export function getResIdentifierName(res: ResponseMap) {
 export function transformToGenerateResultFunctions(
   operationCollection: OperationCollection,
   baseURL: string,
-  options?: ProgrammaticOptions,
+  options?: TOptions,
 ) {
   const context = {
     faker,
@@ -120,27 +120,33 @@ export function transformToHandlerCode(operationCollection: OperationCollection)
 }
 
 export function transformToDtoImportCode(operationCollectionList: OperationCollection) {
-  const dtoList = operationCollectionList.reduce((dtoSet, op)=>{
+  const dtoList = operationCollectionList.reduce((dtoSet, op) => {
     const requestDtoTypeName = match(op.request)
       .with(
         { content: { ['application/json']: { schema: { $ref: P.string } } } },
         r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
       )
       .otherwise(() => null);
-    
-    requestDtoTypeName && dtoSet.add(requestDtoTypeName)
+
+    requestDtoTypeName && dtoSet.add(requestDtoTypeName);
 
     for (const response of op.response) {
       const responseBodyTypeName = match(response.responses)
-        .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
-        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto`)
+        .with(
+          { 'application/json': { title: P.string, properties: P.nonNullable } },
+          r => `${r['application/json'].title}Dto`,
+        )
+        .with(
+          { 'application/json': { title: P.string, items: { title: P.string } } },
+          r => `${r['application/json'].items.title}Dto`,
+        )
         .otherwise(() => null);
 
-      responseBodyTypeName && dtoSet.add(responseBodyTypeName)
+      responseBodyTypeName && dtoSet.add(responseBodyTypeName);
     }
 
-    return dtoSet
-  }, new Set<string>())
+    return dtoSet;
+  }, new Set<string>());
 
   return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
 }
@@ -184,12 +190,19 @@ export function transformToControllersType(operationCollectionList: OperationCol
 
     for (const response of op.response) {
       const responseBodyTypeName = match(response.responses)
-        .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
-        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto[]`)
+        .with(
+          { 'application/json': { title: P.string, properties: P.nonNullable } },
+          r => `${r['application/json'].title}Dto`,
+        )
+        .with(
+          { 'application/json': { title: P.string, items: { title: P.string } } },
+          r => `${r['application/json'].items.title}Dto[]`,
+        )
         .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
         .otherwise(() => 'null');
 
-      const identifierName = getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
+      const identifierName =
+        getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
 
       controllers.push({
         identifierName,
