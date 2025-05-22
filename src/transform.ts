@@ -174,7 +174,7 @@ export function transformToControllersType(operationCollectionList: OperationCol
       match(op.parameters)
         .with(
           P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
-          p => p.filter(p => p.in === 'path').map(p => `${p.name}: string`),
+          p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
         )
         // @TODO 다른 타입도 지원해야 함
         .otherwise(() => []),
