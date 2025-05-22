@@ -1,12 +1,12 @@
-import path from 'path';
-import { OpenAPIV3 } from 'openapi-types';
 import { compact, groupBy, isString, mapValues } from 'es-toolkit';
-import { OperationGenerator } from './generator/operation';
+import { OpenAPIV3 } from 'openapi-types';
+import path from 'path';
+import { Handler } from './generator/handler';
+import { Operation } from './generator/operation';
 import { getV3Doc } from './swagger';
 import {
   browserIntegration,
   combineControllersTypeTemplate,
-  combineHandlers,
   controllersTypeTemplate,
   mockTemplate,
   nodeIntegration,
@@ -16,24 +16,23 @@ import { TOptions } from './types';
 import { writeFile } from './utils';
 
 export async function generate(options: TOptions) {
+  const apiDoc = await getV3Doc(options.input);
+  const operationCollection = new Operation(apiDoc, options).collection();
+  const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
+
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
-
-  const apiDoc = await getV3Doc(options.input);
-
-  const operationCollection = new OperationGenerator(apiDoc, options).generate();
-
-  await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
-
-  const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
   const baseURL = typeof options.baseUrl === 'string' ? options.baseUrl : getServerUrl(apiDoc);
+
   const codeList = mapValues(groupByEntity, (operationCollection, entity) => {
     return isString(entity) ? mockTemplate(operationCollection, baseURL, options, entity) : null;
   });
 
-  await generateHandlers(codeList, targetFolder);
+  // await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
+
+  await new Handler(targetFolder, codeList, groupByEntity).generate();
+
   generateEnvironmentFiles(options, targetFolder);
-  generateCombinedHandler(Object.keys(groupByEntity), targetFolder);
 
   const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
     if (!isString(entity)) return null;
@@ -43,7 +42,6 @@ export async function generate(options: TOptions) {
       content: controllersTypeTemplate(entity, operationCollection),
     };
   });
-
   await generateControllersType(compact(Object.values(controllersTypeList)), targetFolder);
 
   return {
@@ -73,11 +71,6 @@ async function generateControllersType(
   );
 }
 
-async function generateCombinedHandler(entityList: string[], targetFolder: string) {
-  const combinedHandlers = combineHandlers(entityList);
-  await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index.ts`), combinedHandlers);
-}
-
 function generateEnvironmentFiles(options: TOptions, targetFolder: string) {
   const generateNodeEnv = () => writeFile(path.resolve(process.cwd(), targetFolder, `node.ts`), nodeIntegration);
   const generateBrowserEnv = () =>
@@ -94,16 +87,6 @@ function generateEnvironmentFiles(options: TOptions, targetFolder: string) {
 
   const generate = config[options.environment ?? 'default'];
   generate.forEach(fn => fn());
-}
-
-async function generateHandlers(codeList: Record<string, string | null>, targetFolder: string) {
-  await Promise.all(
-    Object.entries(codeList).map(async ([entity, code]) => {
-      if (!code) return;
-
-      await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}_handlers.ts`), code);
-    }),
-  );
 }
 
 function getServerUrl(apiDoc: OpenAPIV3.Document) {
