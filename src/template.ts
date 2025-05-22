@@ -1,5 +1,5 @@
 import { ProgrammaticOptions } from './types';
-import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions, transformToControllersType } from './transform';
+import { OperationCollection, transformToHandlerCode, transformToGenerateResultFunctions, transformToControllersType, transformToDtoImportCode } from './transform';
 
 const getImportsCode = (options: ProgrammaticOptions) => {
   const imports = [
@@ -87,11 +87,9 @@ export const combineHandlers = (entityList: string[]) => {
 }
 
 export const controllersTypeTemplate = (entity: string, operationCollectionList: OperationCollection) => {
-  //TODO: 모든 dto 가져오기
-  const dtoTypeImport = '';
-
   const template = `
-  ${dtoTypeImport}
+  import type { HttpResponseResolver } from "msw";
+  ${transformToDtoImportCode(operationCollectionList)}
   
   export type T${entity}Controllers = {
     ${transformToControllersType(operationCollectionList)}

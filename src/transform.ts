@@ -119,6 +119,32 @@ export function transformToHandlerCode(operationCollection: OperationCollection)
     .trimEnd();
 }
 
+export function transformToDtoImportCode(operationCollectionList: OperationCollection) {
+  const dtoList = operationCollectionList.reduce((dtoSet, op)=>{
+    const requestDtoTypeName = match(op.request)
+      .with(
+        { content: { ['application/json']: { schema: { $ref: P.string } } } },
+        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
+      )
+      .otherwise(() => null);
+    
+    requestDtoTypeName && dtoSet.add(requestDtoTypeName)
+
+    for (const response of op.response) {
+      const responseBodyTypeName = match(response.responses)
+        .with({ 'application/json': { title: P.string, properties: P.nonNullable } }, r => `${r['application/json'].title}Dto`)
+        .with({ 'application/json': { title: P.string, items: { title: P.string } } }, r => `${r['application/json'].items.title}Dto`)
+        .otherwise(() => null);
+
+      responseBodyTypeName && dtoSet.add(responseBodyTypeName)
+    }
+
+    return dtoSet
+  }, new Set<string>())
+
+  return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
+}
+
 export function transformToControllersType(operationCollectionList: OperationCollection) {
   const controllers: Array<{
     identifierName: string;
