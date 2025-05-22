@@ -1,4 +1,10 @@
-import { generate } from './generate';
+import { groupBy } from 'es-toolkit';
+import path from 'path';
+import { ControllerType } from './generator/controller-type';
+import { Handler } from './generator/handler';
+import { MSWServer } from './generator/msw-server';
+import { Operation } from './generator/operation';
+import { Swagger } from './swagger';
 import { TOptions } from './types';
 
 /**
@@ -12,7 +18,21 @@ async function generateMocks(options: TOptions) {
     throw new Error('Options parameter is required');
   }
 
-  return generate(options);
+  const apiDoc = await new Swagger(options.input).document;
+  const operationCollection = new Operation(apiDoc, options).collection();
+  const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
+
+  const outputFolder = options.outputDir || 'src/app/mocks';
+  const targetFolder = path.resolve(process.cwd(), outputFolder);
+
+  await new Handler(options, groupByEntity, apiDoc).generate(targetFolder);
+  await new MSWServer(options.environment).generate(targetFolder);
+  await new ControllerType(groupByEntity).generate(targetFolder);
+
+  return {
+    operationCollection,
+    targetFolder,
+  };
 }
 
 export { generateMocks };
