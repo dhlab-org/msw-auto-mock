@@ -12,13 +12,11 @@ interface IHandler {
 class Handler implements IHandler {
   private readonly options: TOptions;
   private readonly groupByEntity: Record<string, TOperation[]>;
-  private readonly entityList: string[];
   private readonly apiDoc: OpenAPIV3.Document;
 
   constructor(options: TOptions, groupByEntity: Record<string, TOperation[]>, apiDoc: OpenAPIV3.Document) {
     this.options = options;
     this.groupByEntity = groupByEntity;
-    this.entityList = Object.keys(groupByEntity);
     this.apiDoc = apiDoc;
   }
 
@@ -45,15 +43,17 @@ class Handler implements IHandler {
   }
 
   async #generateCombinedHandler(targetFolder: string) {
+    const entityList = Object.keys(this.groupByEntity);
+
     const combinedHandlers = () => {
-      const handlersImport = this.entityList
+      const handlersImport = entityList
         .map(entity => {
           return `import { ${entity}Handlers } from './${entity}.handlers';`;
         })
         .join('\n');
 
       const combineHandlers = `export const handlers = [
-        ${this.entityList
+        ${entityList
           .map(entity => {
             return `...${entity}Handlers, `;
           })
