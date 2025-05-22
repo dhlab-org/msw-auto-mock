@@ -3,43 +3,37 @@ import { TOperation } from '../types';
 import { writeFile } from '../utils';
 
 interface IHandler {
-  generate(): Promise<void>;
+  generate(targetFolder: string): Promise<void>;
 }
 
 class Handler implements IHandler {
-  private readonly targetFolder: string;
   private readonly codeList: Record<string, string | null>;
   private readonly entityList: string[];
 
-  constructor(
-    targetFolder: string,
-    codeList: Record<string, string | null>,
-    groupByEntity: Record<string, TOperation[]>,
-  ) {
-    this.targetFolder = targetFolder;
+  constructor(codeList: Record<string, string | null>, groupByEntity: Record<string, TOperation[]>) {
     this.codeList = codeList;
     this.entityList = Object.keys(groupByEntity);
   }
 
-  async generate(): Promise<void> {
-    await this.#generateHandlersByEntity();
-    await this.#generateCombinedHandler();
+  async generate(targetFolder: string): Promise<void> {
+    await this.#generateHandlersByEntity(targetFolder);
+    await this.#generateCombinedHandler(targetFolder);
   }
 
-  async #generateHandlersByEntity() {
+  async #generateHandlersByEntity(targetFolder: string) {
     await Promise.all(
       Object.entries(this.codeList).map(async ([entity, code]) => {
         if (!code) return;
 
         await writeFile(
-          path.resolve(process.cwd(), path.join(this.targetFolder, 'handlers'), `${entity}.handlers.ts`),
+          path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `${entity}.handlers.ts`),
           code,
         );
       }),
     );
   }
 
-  async #generateCombinedHandler() {
+  async #generateCombinedHandler(targetFolder: string) {
     const combinedHandlers = () => {
       const handlersImport = this.entityList
         .map(entity => {
@@ -58,10 +52,7 @@ class Handler implements IHandler {
       return [handlersImport, combineHandlers].join('\n\n');
     };
 
-    await writeFile(
-      path.resolve(process.cwd(), path.join(this.targetFolder, 'handlers'), `index.ts`),
-      combinedHandlers(),
-    );
+    await writeFile(path.resolve(process.cwd(), path.join(targetFolder, 'handlers'), `index.ts`), combinedHandlers());
   }
 }
 

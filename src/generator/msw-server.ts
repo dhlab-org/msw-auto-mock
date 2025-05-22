@@ -3,19 +3,17 @@ import { writeFile } from '../utils';
 import { TOptions } from '../types';
 
 interface IMSWServer {
-  generate(): Promise<void>;
+  generate(targetFolder: string): Promise<void>;
 }
 
 class MSWServer implements IMSWServer {
-  private readonly targetFolder: string;
   private readonly environment: TOptions['environment'];
 
-  constructor(targetFolder: string, environment: TOptions['environment']) {
-    this.targetFolder = targetFolder;
+  constructor(environment: TOptions['environment']) {
     this.environment = environment;
   }
 
-  async generate(): Promise<void> {
+  async generate(targetFolder: string): Promise<void> {
     const config: Record<NonNullable<TOptions['environment']> | 'default', ServerType[]> = {
       next: ['node', 'browser'],
       react: ['browser'],
@@ -24,12 +22,12 @@ class MSWServer implements IMSWServer {
     };
 
     const environments = config[this.environment ?? 'default'];
-    await Promise.all(environments.map(env => this.#generateServer(env)));
+    await Promise.all(environments.map(env => this.#generateServer(targetFolder, env)));
   }
 
-  async #generateServer(type: ServerType): Promise<void> {
+  async #generateServer(targetFolder: string, type: ServerType): Promise<void> {
     const content = this.#getServerContent(type);
-    await writeFile(path.resolve(process.cwd(), this.targetFolder, `${type}.ts`), content);
+    await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), content);
   }
 
   #getServerContent(type: ServerType): string {

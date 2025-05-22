@@ -24,8 +24,8 @@ export async function generate(options: TOptions) {
 
   // await writeFile(path.resolve(process.cwd(), targetFolder, 'temp.js'), JSON.stringify(operationCollection, null, 2));
 
-  await new Handler(targetFolder, codeList, groupByEntity).generate();
-  await new MSWServer(targetFolder, options.environment).generate();
+  await new Handler(codeList, groupByEntity).generate(targetFolder);
+  await new MSWServer(options.environment).generate(targetFolder);
 
   const controllersTypeList = mapValues(groupByEntity, (operationCollection, entity) => {
     if (!isString(entity)) return null;
