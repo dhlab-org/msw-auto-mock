@@ -1,10 +1,9 @@
-import { groupBy } from 'es-toolkit';
 import path from 'path';
-import { TypeDefinitionGenerator } from './type-definition/generator';
 import { HandlerGenerator } from './handler-generator';
 import { MSWServerGenerator } from './msw-server-generator';
 import { Operation } from './operation';
 import { Swagger } from './swagger';
+import { TypeDefinitionGenerator } from './type-definition/generator';
 import { TOptions } from './types';
 
 /**
@@ -34,6 +33,4 @@ async function generateMocks(options: TOptions) {
   };
 }
 
-export { generateMocks };
-
-export type { TOptions };
+export { generateMocks, type TOptions };

@@ -48,7 +48,7 @@ class TypeDefinitionGenerator implements ITypeGenerator {
           ${this.controllerTypeTemplate.dtoImports(operations)}
           
           export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${this.controllerTypeTemplate.typeOfEntity(operations)}
+            ${this.controllerTypeTemplate.entityTypes(operations)}
           }
           `,
       };

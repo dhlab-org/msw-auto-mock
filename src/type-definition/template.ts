@@ -1,23 +1,23 @@
-import { camelCase, pascalCase } from 'es-toolkit';
-import { match, P } from 'ts-pattern';
-import { getResIdentifierName } from '../transform';
+import { pascalCase } from 'es-toolkit';
 import { TOperation } from '../types';
+import { ControllerTypeAdapter } from './adapter';
 
 interface IControllerTypeTemplate {
   dtoImports(operations: TOperation[]): string;
-  typeOfEntity(operations: TOperation[]): string;
+  entityTypes(operations: TOperation[]): string;
   combined(entityList: string[]): string;
 }
 
 class ControllerTypeTemplate implements IControllerTypeTemplate {
   dtoImports(operations: TOperation[]): string {
     const dtoList = operations.reduce((dtoSet, op) => {
-      const requestDtoTypeName = this.#requestDtoTypeName(op);
-      requestDtoTypeName && dtoSet.add(requestDtoTypeName);
+      const adapter = new ControllerTypeAdapter(op);
 
-      for (const response of op.response) {
-        const responseBodyTypeName = this.#responseDtoTypeName(response);
-        responseBodyTypeName && dtoSet.add(responseBodyTypeName);
+      adapter.requestDtoTypeName && dtoSet.add(adapter.requestDtoTypeName);
+
+      for (const { responses } of op.response) {
+        const responseDtoTypeName = adapter.responseDtoTypeName(responses);
+        responseDtoTypeName && dtoSet.add(responseDtoTypeName);
       }
 
       return dtoSet;
@@ -26,66 +26,8 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
     return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
   }
 
-  typeOfEntity(operations: TOperation[]): string {
-    const controllers = this.#controllerTypes(operations);
-
-    return controllers
-      .map(controller => {
-        return `
-          ${controller.identifierName}: (info: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}>>[0])=> ${controller.responseBodyType} | Promise<${controller.responseBodyType}>;
-        `;
-      })
-      .join('\n');
-  }
-
-  combined(entityList: string[]): string {
-    return `
-      ${this.#entityTypeImports(entityList)}
-    
-      export type TControllers = ${this.#entityTypeUnion(entityList)}
-    `;
-  }
-
-  #entityTypeImports(entityList: string[]): string {
-    return entityList
-      .map(entity => {
-        return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
-      })
-      .join('\n');
-  }
-
-  #entityTypeUnion(entityList: string[]): string {
-    return entityList
-      .map(entity => {
-        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
-      })
-      .join(' | ');
-  }
-
-  #requestDtoTypeName(operation: TOperation): string | null {
-    return match(operation.request)
-      .with(
-        { content: { ['application/json']: { schema: { $ref: P.string } } } },
-        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
-      )
-      .otherwise(() => null);
-  }
-
-  #responseDtoTypeName(response: TOperation['response'][number]): string | null {
-    return match(response.responses)
-      .with(
-        { 'application/json': { title: P.string, properties: P.nonNullable } },
-        r => `${r['application/json'].title}Dto`,
-      )
-      .with(
-        { 'application/json': { title: P.string, items: { title: P.string } } },
-        r => `${r['application/json'].items.title}Dto`,
-      )
-      .otherwise(() => null);
-  }
-
-  #controllerTypes(operations: TOperation[]) {
-    const controllers: Array<{
+  entityTypes(operations: TOperation[]): string {
+    const handlerMethodTypes: Array<{
       identifierName: string;
       pathParams: string;
       requestBodyType: string;
@@ -93,56 +35,45 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
     }> = [];
 
     for (const op of operations) {
-      const requestDtoTypeName = this.#requestDtoTypeName(op) ?? 'null';
-      const pathParamsType = this.#pathParamsType(op);
+      const adapter = new ControllerTypeAdapter(op);
 
       for (const response of op.response) {
-        const responseBodyTypeName = this.#responseBodyType(response);
-        const identifierName = this.#handlerIdentifierName(op, response);
-
-        controllers.push({
-          identifierName,
-          pathParams: pathParamsType,
-          requestBodyType: requestDtoTypeName,
-          responseBodyType: responseBodyTypeName,
+        handlerMethodTypes.push({
+          identifierName: adapter.handlerIdentifierName(response),
+          pathParams: adapter.pathParamsType,
+          requestBodyType: adapter.requestDtoTypeName ?? 'null',
+          responseBodyType: adapter.responseBodyType(response.responses),
         });
       }
     }
 
-    return controllers;
+    return handlerMethodTypes
+      .map(handler => {
+        return `
+            ${handler.identifierName}: (info: Parameters<HttpResponseResolver<${handler.pathParams}, ${handler.requestBodyType}>>[0])=> ${handler.responseBodyType} | Promise<${handler.responseBodyType}>;
+          `;
+      })
+      .join('\n');
   }
 
-  #pathParamsType(operation: TOperation): string {
-    const pathParamsTypeContents = match(operation.parameters)
-      .with(
-        P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
-        p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
-      )
-      .otherwise(() => [])
-      .filter(Boolean)
-      .join(',\n');
+  combined(entityList: string[]): string {
+    const imports = entityList
+      .map(entity => {
+        return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
+      })
+      .join('\n');
 
-    return pathParamsTypeContents ? `{${pathParamsTypeContents}}` : 'Record<string, never>';
-  }
+    const entityTypeUnion = entityList
+      .map(entity => {
+        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
+      })
+      .join(' | ');
 
-  #responseBodyType(response: TOperation['response'][number]): string {
-    return match(response.responses)
-      .with(
-        { 'application/json': { title: P.string, properties: P.nonNullable } },
-        r => `${r['application/json'].title}Dto`,
-      )
-      .with(
-        { 'application/json': { title: P.string, items: { title: P.string } } },
-        r => `${r['application/json'].items.title}Dto[]`,
-      )
-      .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
-      .otherwise(() => 'null');
-  }
-
-  #handlerIdentifierName(operation: TOperation, response: TOperation['response'][number]): string {
-    return (
-      getResIdentifierName(response) || camelCase(`${operation.operationId}${operation.verb}${response.code}Response`)
-    );
+    return `
+      ${imports}
+    
+      export type TControllers = ${entityTypeUnion}
+    `;
   }
 }
 
