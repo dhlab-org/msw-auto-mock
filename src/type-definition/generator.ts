@@ -1,6 +1,6 @@
 import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
 import path from 'path';
-import { TOperation } from '../types';
+import { Operation } from '../operation';
 import { writeFile } from '../utils';
 import { ControllerTypeTemplate } from './template';
 
@@ -9,16 +9,15 @@ interface ITypeGenerator {
 }
 
 class TypeDefinitionGenerator implements ITypeGenerator {
-  private readonly operationsByEntity: Record<TEntity, TOperation[]>;
+  private readonly operation: Operation;
   private readonly controllerTypeTemplate: ControllerTypeTemplate;
 
-  constructor(operationsByEntity: Record<TEntity, TOperation[]>) {
-    this.operationsByEntity = operationsByEntity;
+  constructor(operation: Operation) {
+    this.operation = operation;
     this.controllerTypeTemplate = new ControllerTypeTemplate();
   }
 
   async generate(targetFolder: string): Promise<void> {
-    const entityList: TEntity[] = Object.keys(this.operationsByEntity);
     const entityTypeList: TEntityContent[] = compact(Object.values(this.#entityTypeDefinitions()));
 
     // 각 엔티티의 타입 정의 파일을 생성합니다
@@ -34,12 +33,12 @@ class TypeDefinitionGenerator implements ITypeGenerator {
     // 모든 엔티티의 타입 정의를 포함하는 모듈 파일을 생성합니다
     await writeFile(
       path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`),
-      this.controllerTypeTemplate.combinedTypeDefinition(entityList),
+      this.controllerTypeTemplate.combined(this.operation.entities),
     );
   }
 
-  #entityTypeDefinitions(): Record<TEntity, TEntityContent | null> {
-    return mapValues(this.operationsByEntity, (operations, entity) => {
+  #entityTypeDefinitions(): Record<string, TEntityContent | null> {
+    return mapValues(this.operation.byEntity, (operations, entity) => {
       if (!isString(entity)) return null;
 
       return {
@@ -49,7 +48,7 @@ class TypeDefinitionGenerator implements ITypeGenerator {
           ${this.controllerTypeTemplate.dtoImports(operations)}
           
           export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${this.controllerTypeTemplate.typeDefinition(operations)}
+            ${this.controllerTypeTemplate.typeOfEntity(operations)}
           }
           `,
       };
@@ -59,9 +58,7 @@ class TypeDefinitionGenerator implements ITypeGenerator {
 
 export { TypeDefinitionGenerator };
 
-type TEntity = string;
-
 type TEntityContent = {
-  entity: TEntity;
+  entity: string;
   content: string;
 };

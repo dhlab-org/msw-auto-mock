@@ -1,11 +1,14 @@
-import { camelCase } from 'es-toolkit';
+import { camelCase, groupBy } from 'es-toolkit';
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import { TOperation, TOptions } from './types';
 import { toExpressLikePath } from './utils';
 
+type TEntity = string;
 interface IOperation {
-  collection(): TOperation[];
+  collection: TOperation[];
+  byEntity: Record<TEntity, TOperation[]>;
+  entities: TEntity[];
 }
 
 class Operation implements IOperation {
@@ -19,12 +22,21 @@ class Operation implements IOperation {
     this.apiGenerator = new ApiGenerator(apiDoc, {});
   }
 
-  collection() {
+  get collection() {
     const operationDefinitions = this.#getOperationDefinitions();
     return operationDefinitions
       .filter(op => this.#operationFilter(op))
       .map(op => this.#codeFilter(op))
       .map(definition => this.#toOperation(definition));
+  }
+
+  get byEntity() {
+    const operations = this.collection;
+    return groupBy(operations, op => op.path.split('/')[1]);
+  }
+
+  get entities() {
+    return Object.keys(this.byEntity);
   }
 
   #getOperationDefinitions(): TOperationDefinition[] {

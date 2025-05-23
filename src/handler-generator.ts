@@ -7,6 +7,7 @@ import { transformJSONSchemaToFakerCode, MAX_STRING_LENGTH } from './faker';
 import { getResIdentifierName } from './transform';
 import { TOperation, TOptions } from './types';
 import { writeFile } from './utils';
+import { Operation } from './operation';
 
 interface IHandlerGenerator {
   generate(targetFolder: string): Promise<void>;
@@ -14,12 +15,12 @@ interface IHandlerGenerator {
 
 class HandlerGenerator implements IHandlerGenerator {
   private readonly options: TOptions;
-  private readonly operationsByEntity: Record<string, TOperation[]>;
+  private readonly operation: Operation;
   private readonly apiDoc: OpenAPIV3.Document;
 
-  constructor(options: TOptions, operationsByEntity: Record<string, TOperation[]>, apiDoc: OpenAPIV3.Document) {
+  constructor(options: TOptions, operation: Operation, apiDoc: OpenAPIV3.Document) {
     this.options = options;
-    this.operationsByEntity = operationsByEntity;
+    this.operation = operation;
     this.apiDoc = apiDoc;
   }
 
@@ -29,7 +30,7 @@ class HandlerGenerator implements IHandlerGenerator {
   }
 
   async #generateHandlersByEntity(targetFolder: string) {
-    const codeList = mapValues(this.operationsByEntity, (operationCollection, entity) => {
+    const codeList = mapValues(this.operation.byEntity, (operationCollection, entity) => {
       return isString(entity) ? this.#mockTemplate(operationCollection, entity) : null;
     });
 
@@ -46,7 +47,7 @@ class HandlerGenerator implements IHandlerGenerator {
   }
 
   async #generateCombinedHandler(targetFolder: string) {
-    const entityList = Object.keys(this.operationsByEntity);
+    const entityList = Object.keys(this.operation.byEntity);
 
     const combinedHandlers = () => {
       const handlersImport = entityList

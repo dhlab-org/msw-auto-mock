@@ -5,13 +5,11 @@ import { TOperation } from '../types';
 
 interface IControllerTypeTemplate {
   dtoImports(operations: TOperation[]): string;
-  typeDefinition(operations: TOperation[]): string;
-  combinedTypeDefinition(entityList: string[]): string;
+  typeOfEntity(operations: TOperation[]): string;
+  combined(entityList: string[]): string;
 }
 
 class ControllerTypeTemplate implements IControllerTypeTemplate {
-  constructor() {}
-
   dtoImports(operations: TOperation[]): string {
     const dtoList = operations.reduce((dtoSet, op) => {
       const requestDtoTypeName = this.#requestDtoTypeName(op);
@@ -28,7 +26,7 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
     return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
   }
 
-  typeDefinition(operations: TOperation[]): string {
+  typeOfEntity(operations: TOperation[]): string {
     const controllers = this.#controllerTypes(operations);
 
     return controllers
@@ -40,7 +38,7 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
       .join('\n');
   }
 
-  combinedTypeDefinition(entityList: string[]): string {
+  combined(entityList: string[]): string {
     return `
       ${this.#entityTypeImports(entityList)}
     

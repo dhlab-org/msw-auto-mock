@@ -19,18 +19,17 @@ async function generateMocks(options: TOptions) {
   }
 
   const apiDoc = await new Swagger(options.input).document;
-  const operationCollection = new Operation(apiDoc, options).collection();
-  const operationsByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
+  const operation = new Operation(apiDoc, options);
 
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new HandlerGenerator(options, operationsByEntity, apiDoc).generate(targetFolder);
+  await new HandlerGenerator(options, operation, apiDoc).generate(targetFolder);
   await new MSWServerGenerator(options.environment).generate(targetFolder);
-  await new TypeDefinitionGenerator(operationsByEntity).generate(targetFolder);
+  await new TypeDefinitionGenerator(operation).generate(targetFolder);
 
   return {
-    operationCollection,
+    operation,
     targetFolder,
   };
 }
