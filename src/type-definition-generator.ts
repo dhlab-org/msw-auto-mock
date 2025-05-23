@@ -1,6 +1,7 @@
-import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
+import { camelCase, compact, isString, mapValues, pascalCase } from 'es-toolkit';
 import path from 'path';
-import { transformToControllersType, transformToDtoImportCode } from './transform';
+import { match, P } from 'ts-pattern';
+import { getResIdentifierName } from './transform';
 import { TOperation } from './types';
 import { writeFile } from './utils';
 
@@ -9,9 +10,9 @@ interface ITypeGenerator {
 }
 
 class TypeDefinitionGenerator implements ITypeGenerator {
-  private readonly operationsByEntity: Record<string, TOperation[]>;
+  private readonly operationsByEntity: Record<TEntity, TOperation[]>;
 
-  constructor(operationsByEntity: Record<string, TOperation[]>) {
+  constructor(operationsByEntity: Record<TEntity, TOperation[]>) {
     this.operationsByEntity = operationsByEntity;
   }
 
@@ -44,10 +45,10 @@ class TypeDefinitionGenerator implements ITypeGenerator {
         entity,
         content: `
           import type { HttpResponseResolver } from "msw";
-          ${transformToDtoImportCode(operations)}
+          ${this.#dtoImportsTemplate(operations)}
           
           export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${transformToControllersType(operations)}
+            ${this.#typeDefinitionTemplate(operations)}
           }
           `,
       };
@@ -70,6 +71,101 @@ class TypeDefinitionGenerator implements ITypeGenerator {
     `;
 
     return template;
+  }
+
+  #dtoImportsTemplate(operations: TOperation[]) {
+    const dtoList = operations.reduce((dtoSet, op) => {
+      const requestDtoTypeName = match(op.request)
+        .with(
+          { content: { ['application/json']: { schema: { $ref: P.string } } } },
+          r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
+        )
+        .otherwise(() => null);
+
+      requestDtoTypeName && dtoSet.add(requestDtoTypeName);
+
+      for (const response of op.response) {
+        const responseBodyTypeName = match(response.responses)
+          .with(
+            { 'application/json': { title: P.string, properties: P.nonNullable } },
+            r => `${r['application/json'].title}Dto`,
+          )
+          .with(
+            { 'application/json': { title: P.string, items: { title: P.string } } },
+            r => `${r['application/json'].items.title}Dto`,
+          )
+          .otherwise(() => null);
+
+        responseBodyTypeName && dtoSet.add(responseBodyTypeName);
+      }
+
+      return dtoSet;
+    }, new Set<string>());
+
+    return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
+  }
+
+  #typeDefinitionTemplate(operations: TOperation[]) {
+    const controllers: Array<{
+      identifierName: string;
+      pathParams: string;
+      requestBodyType: string;
+      responseBodyType: string;
+    }> = [];
+
+    for (const op of operations) {
+      const requestDtoTypeName = match(op.request)
+        .with(
+          { content: { ['application/json']: { schema: { $ref: P.string } } } },
+          r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
+        )
+        // TODO: 추후에 다른 타입도 지원해야 함
+        .otherwise(() => 'null');
+
+      const pathParamsTypeContents = compact(
+        match(op.parameters)
+          .with(
+            P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
+            p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
+          )
+          // @TODO 다른 타입도 지원해야 함
+          .otherwise(() => []),
+      ).join(',\n');
+
+      const pathParamsInlineType = pathParamsTypeContents ? `{${pathParamsTypeContents}}` : 'Record<string, never>';
+
+      for (const response of op.response) {
+        const responseBodyTypeName = match(response.responses)
+          .with(
+            { 'application/json': { title: P.string, properties: P.nonNullable } },
+            r => `${r['application/json'].title}Dto`,
+          )
+          .with(
+            { 'application/json': { title: P.string, items: { title: P.string } } },
+            r => `${r['application/json'].items.title}Dto[]`,
+          )
+          .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
+          .otherwise(() => 'null');
+
+        const identifierName =
+          getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
+
+        controllers.push({
+          identifierName,
+          pathParams: pathParamsInlineType,
+          requestBodyType: requestDtoTypeName,
+          responseBodyType: responseBodyTypeName,
+        });
+      }
+    }
+
+    return controllers
+      .map(controller => {
+        return `
+      ${controller.identifierName}: (info: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}>>[0])=> ${controller.responseBodyType} | Promise<${controller.responseBodyType}>;
+      `;
+      })
+      .join('\n');
   }
 }
 

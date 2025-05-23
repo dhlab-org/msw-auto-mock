@@ -1,8 +1,7 @@
-import { camelCase, compact } from 'es-toolkit';
+import { camelCase } from 'es-toolkit';
 import merge from 'lodash/merge';
 import { OpenAPIV3 } from 'openapi-types';
-import { match, P } from 'ts-pattern';
-import { TOperation, TResponseMap } from './types';
+import { TResponseMap } from './types';
 import { isValidRegExp } from './utils';
 
 export const MAX_STRING_LENGTH = 42;
@@ -12,109 +11,6 @@ export function getResIdentifierName(res: TResponseMap) {
     return '';
   }
   return camelCase(`get_${res.id}_${res.code}_response`);
-}
-
-export function transformToDtoImportCode(operations: TOperation[]) {
-  const dtoList = operations.reduce((dtoSet, op) => {
-    const requestDtoTypeName = match(op.request)
-      .with(
-        { content: { ['application/json']: { schema: { $ref: P.string } } } },
-        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
-      )
-      .otherwise(() => null);
-
-    requestDtoTypeName && dtoSet.add(requestDtoTypeName);
-
-    for (const response of op.response) {
-      const responseBodyTypeName = match(response.responses)
-        .with(
-          { 'application/json': { title: P.string, properties: P.nonNullable } },
-          r => `${r['application/json'].title}Dto`,
-        )
-        .with(
-          { 'application/json': { title: P.string, items: { title: P.string } } },
-          r => `${r['application/json'].items.title}Dto`,
-        )
-        .otherwise(() => null);
-
-      responseBodyTypeName && dtoSet.add(responseBodyTypeName);
-    }
-
-    return dtoSet;
-  }, new Set<string>());
-
-  return `import type { ${Array.from(dtoList).join(', ')} } from '@/shared/api/dto';`;
-}
-
-export function transformToControllersType(operations: TOperation[]) {
-  const controllers: Array<{
-    identifierName: string;
-    pathParams: string;
-    requestBodyType: string;
-    responseBodyType: string;
-  }> = [];
-
-  for (const op of operations) {
-    const requestDtoTypeName = match(op.request)
-      .with(
-        { content: { ['application/json']: { schema: { $ref: P.string } } } },
-        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
-      )
-      // TODO: 추후에 다른 타입도 지원해야 함
-      .otherwise(() => 'null');
-
-    const mappingType = {
-      integer: 'number',
-      string: 'string',
-      boolean: 'boolean',
-      object: 'object',
-      number: 'number',
-    };
-
-    const pathParamsTypeContents = compact(
-      match(op.parameters)
-        .with(
-          P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
-          p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
-        )
-        // @TODO 다른 타입도 지원해야 함
-        .otherwise(() => []),
-    ).join(',\n');
-
-    const pathParamsInlineType = pathParamsTypeContents ? `{${pathParamsTypeContents}}` : 'Record<string, never>';
-
-    for (const response of op.response) {
-      const responseBodyTypeName = match(response.responses)
-        .with(
-          { 'application/json': { title: P.string, properties: P.nonNullable } },
-          r => `${r['application/json'].title}Dto`,
-        )
-        .with(
-          { 'application/json': { title: P.string, items: { title: P.string } } },
-          r => `${r['application/json'].items.title}Dto[]`,
-        )
-        .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
-        .otherwise(() => 'null');
-
-      const identifierName =
-        getResIdentifierName(response) || camelCase(`${op.operationId}${op.verb}${response.code}Response`);
-
-      controllers.push({
-        identifierName,
-        pathParams: pathParamsInlineType,
-        requestBodyType: requestDtoTypeName,
-        responseBodyType: responseBodyTypeName,
-      });
-    }
-  }
-
-  return controllers
-    .map(controller => {
-      return `
-    ${controller.identifierName}: (info: Parameters<HttpResponseResolver<${controller.pathParams}, ${controller.requestBodyType}>>[0])=> ${controller.responseBodyType} | Promise<${controller.responseBodyType}>;
-    `;
-    })
-    .join('\n');
 }
 
 export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObject, key?: string): string {
