@@ -3,23 +3,25 @@ import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import { TOperation, TOptions } from './types';
 import { toExpressLikePath } from './utils';
+import { Swagger } from './swagger';
 
-type TEntity = string;
 interface IOperation {
   collection: TOperation[];
   byEntity: Record<TEntity, TOperation[]>;
   entities: TEntity[];
 }
 
+type TEntity = string;
+
 class Operation implements IOperation {
-  private readonly apiDoc: OpenAPIV3.Document;
+  private readonly swagger: Swagger;
   private readonly options: TOptions;
   private readonly apiGenerator: ApiGenerator;
 
-  constructor(apiDoc: OpenAPIV3.Document, options: TOptions) {
-    this.apiDoc = apiDoc;
+  constructor(swagger: Swagger, options: TOptions) {
+    this.swagger = swagger;
     this.options = options;
-    this.apiGenerator = new ApiGenerator(apiDoc, {});
+    this.apiGenerator = new ApiGenerator(swagger.apiDoc, {});
   }
 
   get collection() {
@@ -41,7 +43,7 @@ class Operation implements IOperation {
 
   #getOperationDefinitions(): TOperationDefinition[] {
     const operationKeys = Object.values(OpenAPIV3.HttpMethods) as OpenAPIV3.HttpMethods[];
-    return Object.entries(this.apiDoc.paths).flatMap(([path, pathItem]) =>
+    return Object.entries(this.swagger.apiDoc.paths).flatMap(([path, pathItem]) =>
       !pathItem
         ? []
         : Object.entries(pathItem)

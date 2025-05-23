@@ -5,22 +5,38 @@ import converter from 'swagger2openapi';
 import { TOptions } from './types';
 
 interface ISwagger {
-  document: Promise<OpenAPIV3.Document>;
+  apiDoc: OpenAPIV3.Document;
+  baseUrl: string;
 }
 
 class Swagger implements ISwagger {
-  private readonly rawFile: TOptions['input'];
+  private readonly document: OpenAPIV3.Document;
 
-  constructor(rawFile: TOptions['input']) {
-    this.rawFile = rawFile;
+  private constructor(document: OpenAPIV3.Document) {
+    this.document = document;
   }
 
-  get document(): Promise<OpenAPIV3.Document> {
-    return this.#openApiV3Doc();
+  get apiDoc(): OpenAPIV3.Document {
+    return this.document;
   }
 
-  async #openApiV3Doc(): Promise<OpenAPIV3.Document> {
-    const doc = await SwaggerParser.bundle(this.rawFile);
+  get baseUrl() {
+    const server = this.document.servers?.at(0);
+    if (!server) return '';
+
+    return Object.entries(server.variables || {}).reduce(
+      (url, [key, value]) => url.replace(`{${key}}`, value.default),
+      server.url,
+    );
+  }
+
+  static async load(rawFile: TOptions['input']): Promise<Swagger> {
+    const document = await Swagger.#openApiV3Doc(rawFile);
+    return new Swagger(document);
+  }
+
+  static async #openApiV3Doc(rawFile: TOptions['input']): Promise<OpenAPIV3.Document> {
+    const doc = await SwaggerParser.bundle(rawFile);
     const isOpenApiV3 = 'openapi' in doc && doc.openapi.startsWith('3');
 
     return isOpenApiV3

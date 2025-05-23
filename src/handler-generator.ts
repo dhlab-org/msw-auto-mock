@@ -1,13 +1,13 @@
 import { faker } from '@faker-js/faker';
 import { isString, mapValues } from 'es-toolkit';
 import vm from 'node:vm';
-import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
-import { transformJSONSchemaToFakerCode, MAX_STRING_LENGTH } from './faker';
+import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from './faker';
+import { Operation } from './operation';
+import { Swagger } from './swagger';
 import { getResIdentifierName } from './transform';
 import { TOperation, TOptions } from './types';
 import { writeFile } from './utils';
-import { Operation } from './operation';
 
 interface IHandlerGenerator {
   generate(targetFolder: string): Promise<void>;
@@ -16,12 +16,12 @@ interface IHandlerGenerator {
 class HandlerGenerator implements IHandlerGenerator {
   private readonly options: TOptions;
   private readonly operation: Operation;
-  private readonly apiDoc: OpenAPIV3.Document;
+  private readonly swagger: Swagger;
 
-  constructor(options: TOptions, operation: Operation, apiDoc: OpenAPIV3.Document) {
+  constructor(options: TOptions, operation: Operation, swagger: Swagger) {
     this.options = options;
     this.operation = operation;
-    this.apiDoc = apiDoc;
+    this.swagger = swagger;
   }
 
   async generate(targetFolder: string): Promise<void> {
@@ -71,7 +71,7 @@ class HandlerGenerator implements IHandlerGenerator {
   }
 
   #mockTemplate(operationCollection: TOperation[], entity: string) {
-    const baseURL = typeof this.options.baseUrl === 'string' ? this.options.baseUrl : this.#urlInDoc();
+    const baseURL = typeof this.options.baseUrl === 'string' ? this.options.baseUrl : this.swagger.baseUrl;
 
     const imports = [
       `import { HttpResponse, http, type HttpResponseResolver  } from 'msw';`,
@@ -196,21 +196,6 @@ class HandlerGenerator implements IHandlerGenerator {
           .join('\n'),
       )
       .join('\n');
-  }
-
-  #urlInDoc() {
-    let server = this.apiDoc.servers?.at(0);
-    let url = '';
-    if (server) {
-      url = server.url;
-    }
-    if (server?.variables) {
-      Object.entries(server.variables).forEach(([key, value]) => {
-        url = url.replace(`{${key}}`, value.default);
-      });
-    }
-
-    return url;
   }
 }
 

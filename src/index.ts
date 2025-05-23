@@ -17,13 +17,14 @@ async function generateMocks(options: TOptions) {
     throw new Error('Options parameter is required');
   }
 
-  const apiDoc = await new Swagger(options.input).document;
-  const operation = new Operation(apiDoc, options);
+  const swagger = await Swagger.load(options.input);
+
+  const operation = new Operation(swagger, options);
 
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new HandlerGenerator(options, operation, apiDoc).generate(targetFolder);
+  await new HandlerGenerator(options, operation, swagger).generate(targetFolder);
   await new MSWServerGenerator(options.environment).generate(targetFolder);
   await new TypeDefinitionGenerator(operation).generate(targetFolder);
 
