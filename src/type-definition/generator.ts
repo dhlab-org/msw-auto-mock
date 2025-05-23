@@ -8,9 +8,14 @@ interface ITypeGenerator {
   generate(targetFolder: string): Promise<void>;
 }
 
+type TEntityContent = {
+  entity: string;
+  content: string;
+};
 class TypeDefinitionGenerator implements ITypeGenerator {
   private readonly operation: Operation;
   private readonly controllerTypeTemplate: ControllerTypeTemplate;
+  private readonly OUTPUT_DIR = '__generated__';
 
   constructor(operation: Operation) {
     this.operation = operation;
@@ -19,22 +24,10 @@ class TypeDefinitionGenerator implements ITypeGenerator {
 
   async generate(targetFolder: string): Promise<void> {
     const entityTypeList: TEntityContent[] = compact(Object.values(this.#entityTypeDefinitions()));
+    const outputDir = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR));
 
-    // 각 엔티티의 타입 정의 파일을 생성합니다
-    await Promise.all(
-      entityTypeList.map(async ({ entity, content }) => {
-        await writeFile(
-          path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `${entity}.type.ts`),
-          content,
-        );
-      }),
-    );
-
-    // 모든 엔티티의 타입 정의를 포함하는 모듈 파일을 생성합니다
-    await writeFile(
-      path.resolve(process.cwd(), path.join(targetFolder, '__generated__'), `index.ts`),
-      this.controllerTypeTemplate.combined(this.operation.entities),
-    );
+    await this.#generateEntityTypeFiles(entityTypeList, outputDir);
+    await this.#generateCombinedTypeFile(outputDir);
   }
 
   #entityTypeDefinitions(): Record<string, TEntityContent | null> {
@@ -48,17 +41,24 @@ class TypeDefinitionGenerator implements ITypeGenerator {
           ${this.controllerTypeTemplate.dtoImports(operations)}
           
           export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${this.controllerTypeTemplate.entityTypes(operations)}
+            ${this.controllerTypeTemplate.entityType(operations)}
           }
           `,
       };
     });
   }
+
+  async #generateEntityTypeFiles(entityTypeList: TEntityContent[], outputDir: string): Promise<void> {
+    await Promise.all(
+      entityTypeList.map(async ({ entity, content }) => {
+        await writeFile(path.join(outputDir, `${entity}.type.ts`), content);
+      }),
+    );
+  }
+
+  async #generateCombinedTypeFile(outputDir: string): Promise<void> {
+    await writeFile(path.join(outputDir, 'index.ts'), this.controllerTypeTemplate.combined(this.operation.entities));
+  }
 }
 
 export { TypeDefinitionGenerator };
-
-type TEntityContent = {
-  entity: string;
-  content: string;
-};
