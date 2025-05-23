@@ -1,8 +1,8 @@
 import { groupBy } from 'es-toolkit';
 import path from 'path';
-import { ControllerType } from './controller-type';
-import { Handler } from './handler';
-import { MSWServer } from './msw-server';
+import { TypeDefinitionGenerator } from './type-definition-generator';
+import { HandlerGenerator } from './handler-generator';
+import { MSWServerGenerator } from './msw-server-generator';
 import { Operation } from './operation';
 import { Swagger } from './swagger';
 import { TOptions } from './types';
@@ -20,14 +20,14 @@ async function generateMocks(options: TOptions) {
 
   const apiDoc = await new Swagger(options.input).document;
   const operationCollection = new Operation(apiDoc, options).collection();
-  const groupByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
+  const operationsByEntity = groupBy(operationCollection, it => it.path.split('/')[1]);
 
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new Handler(options, groupByEntity, apiDoc).generate(targetFolder);
-  await new MSWServer(options.environment).generate(targetFolder);
-  await new ControllerType(groupByEntity).generate(targetFolder);
+  await new HandlerGenerator(options, operationsByEntity, apiDoc).generate(targetFolder);
+  await new MSWServerGenerator(options.environment).generate(targetFolder);
+  await new TypeDefinitionGenerator(operationsByEntity).generate(targetFolder);
 
   return {
     operationCollection,

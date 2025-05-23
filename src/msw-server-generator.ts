@@ -2,11 +2,11 @@ import path from 'path';
 import { writeFile } from './utils';
 import { TOptions } from './types';
 
-interface IMSWServer {
+interface IMSWServerGenerator {
   generate(targetFolder: string): Promise<void>;
 }
 
-class MSWServer implements IMSWServer {
+class MSWServerGenerator implements IMSWServerGenerator {
   private readonly environment: TOptions['environment'];
 
   constructor(environment: TOptions['environment']) {
@@ -58,7 +58,7 @@ class MSWServer implements IMSWServer {
   }
 }
 
-export { MSWServer };
+export { MSWServerGenerator };
 
 type ServerType = 'node' | 'browser' | 'native';
 type ServerConfig = {

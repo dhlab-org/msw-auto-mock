@@ -5,18 +5,18 @@ import { transformToGenerateResultFunctions, transformToHandlerCode } from './tr
 import { TOperation, TOptions } from './types';
 import { writeFile } from './utils';
 
-interface IHandler {
+interface IHandlerGenerator {
   generate(targetFolder: string): Promise<void>;
 }
 
-class Handler implements IHandler {
+class HandlerGenerator implements IHandlerGenerator {
   private readonly options: TOptions;
-  private readonly groupByEntity: Record<string, TOperation[]>;
+  private readonly operationsByEntity: Record<string, TOperation[]>;
   private readonly apiDoc: OpenAPIV3.Document;
 
-  constructor(options: TOptions, groupByEntity: Record<string, TOperation[]>, apiDoc: OpenAPIV3.Document) {
+  constructor(options: TOptions, operationsByEntity: Record<string, TOperation[]>, apiDoc: OpenAPIV3.Document) {
     this.options = options;
-    this.groupByEntity = groupByEntity;
+    this.operationsByEntity = operationsByEntity;
     this.apiDoc = apiDoc;
   }
 
@@ -26,7 +26,7 @@ class Handler implements IHandler {
   }
 
   async #generateHandlersByEntity(targetFolder: string) {
-    const codeList = mapValues(this.groupByEntity, (operationCollection, entity) => {
+    const codeList = mapValues(this.operationsByEntity, (operationCollection, entity) => {
       return isString(entity) ? this.#mockTemplate(operationCollection, entity) : null;
     });
 
@@ -43,7 +43,7 @@ class Handler implements IHandler {
   }
 
   async #generateCombinedHandler(targetFolder: string) {
-    const entityList = Object.keys(this.groupByEntity);
+    const entityList = Object.keys(this.operationsByEntity);
 
     const combinedHandlers = () => {
       const handlersImport = entityList
@@ -129,4 +129,4 @@ class Handler implements IHandler {
   }
 }
 
-export { Handler };
+export { HandlerGenerator };
