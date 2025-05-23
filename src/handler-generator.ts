@@ -3,7 +3,8 @@ import { isString, mapValues } from 'es-toolkit';
 import vm from 'node:vm';
 import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
-import { getResIdentifierName, MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from './transform';
+import { transformJSONSchemaToFakerCode, MAX_STRING_LENGTH } from './faker';
+import { getResIdentifierName } from './transform';
 import { TOperation, TOptions } from './types';
 import { writeFile } from './utils';
 
