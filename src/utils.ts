@@ -1,14 +1,13 @@
-import prettier from 'prettier';
-import path from 'path';
-import camelCase from 'lodash/camelCase';
+import { camelCase } from 'es-toolkit';
 import fs from 'fs/promises';
+import path from 'path';
+import prettier from 'prettier';
 
 async function prettify(content: string): Promise<string> {
   const config = await prettier.resolveConfig(process.cwd(), {
     useCache: true,
     editorconfig: true,
   });
-
 
   try {
     return prettier.format(content, {

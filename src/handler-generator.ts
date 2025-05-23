@@ -1,7 +1,9 @@
+import { faker } from '@faker-js/faker';
 import { isString, mapValues } from 'es-toolkit';
+import vm from 'node:vm';
 import { OpenAPIV3 } from 'openapi-types';
 import path from 'path';
-import { transformToGenerateResultFunctions, transformToHandlerCode } from './transform';
+import { getResIdentifierName, MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from './transform';
 import { TOperation, TOptions } from './types';
 import { writeFile } from './utils';
 
@@ -106,11 +108,92 @@ class HandlerGenerator implements IHandlerGenerator {
       ${apiCounters}
       
       export const ${entity}Handlers = [
-        ${transformToHandlerCode(operationCollection)}
+        ${this.#handlersTemplate(operationCollection)}
       ];
       
-      ${transformToGenerateResultFunctions(operationCollection, baseURL, this.options)}
+      ${this.#resultTemplate(operationCollection, baseURL)}
       `;
+  }
+
+  #handlersTemplate(operationCollection: TOperation[]): string {
+    return operationCollection
+      .map(op => {
+        return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
+          const resultArray = [${op.response.map(response => {
+            const identifier = getResIdentifierName(response);
+            const status = parseInt(response?.code!);
+            const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
+            const result = `{
+              status: ${status},
+              responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
+              body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
+            }`;
+
+            return result;
+          })}];
+  
+          const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length]
+          
+          return new HttpResponse(JSON.stringify(selectedResult.body), {
+            status: selectedResult.status,
+            headers: {
+              'Content-Type': selectedResult.responseType
+            }
+          })
+        }),\n`;
+      })
+      .join('  ')
+      .trimEnd();
+  }
+
+  #resultTemplate(operationCollection: TOperation[], baseURL: string) {
+    const context = {
+      faker,
+      MAX_STRING_LENGTH,
+      MAX_ARRAY_LENGTH: this.options?.maxArrayLength ?? 20,
+      baseURL: baseURL ?? '',
+      result: null,
+    };
+    vm.createContext(context);
+
+    return operationCollection
+      .map(op =>
+        op.response
+          .map(r => {
+            const name = getResIdentifierName(r);
+            if (!name) {
+              return '';
+            }
+
+            if (!r.responses) {
+              return;
+            }
+
+            const isCustomResponse = Object.keys(this.options?.controllers ?? {}).includes(name);
+            if (isCustomResponse) {
+              return [
+                `export function ${name}(info: Parameters<HttpResponseResolver>[0]) {`,
+                `  return controllers.${name}(info);`,
+                `};\n`,
+              ].join('\n');
+            }
+
+            const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
+            const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
+            if (this.options?.static) {
+              vm.runInContext(`result = ${fakerResult};`, context);
+            }
+
+            return [
+              `export function `,
+              `${name}() { `,
+              `return ${this.options?.static ? JSON.stringify(context.result) : fakerResult} `,
+              `};\n`,
+            ].join('\n');
+          })
+          .join('\n'),
+      )
+      .join('\n');
   }
 
   #urlInDoc() {

@@ -1,111 +1,17 @@
-import vm from 'node:vm';
-import { OpenAPIV3 } from 'openapi-types';
+import { camelCase, compact } from 'es-toolkit';
 import merge from 'lodash/merge';
-import { camelCase } from 'es-toolkit/string';
-import { faker } from '@faker-js/faker';
-import { TOperation, TOptions } from './types';
-import { isValidRegExp } from './utils';
+import { OpenAPIV3 } from 'openapi-types';
 import { match, P } from 'ts-pattern';
-import { compact } from 'lodash';
+import { TOperation, TResponseMap } from './types';
+import { isValidRegExp } from './utils';
 
-const MAX_STRING_LENGTH = 42;
+export const MAX_STRING_LENGTH = 42;
 
-export interface ResponseMap {
-  code: string;
-  id: string;
-  responses?: Record<string, OpenAPIV3.SchemaObject>;
-}
-
-export function getResIdentifierName(res: ResponseMap) {
+export function getResIdentifierName(res: TResponseMap) {
   if (!res.id) {
     return '';
   }
-  return camelCase(`get ${res.id}${res.code}Response`);
-}
-
-export function transformToGenerateResultFunctions(
-  operationCollection: TOperation[],
-  baseURL: string,
-  options?: TOptions,
-) {
-  const context = {
-    faker,
-    MAX_STRING_LENGTH,
-    MAX_ARRAY_LENGTH: options?.maxArrayLength ?? 20,
-    baseURL: baseURL ?? '',
-    result: null,
-  };
-  vm.createContext(context);
-
-  return operationCollection
-    .map(op =>
-      op.response
-        .map(r => {
-          const name = getResIdentifierName(r);
-          if (!name) {
-            return '';
-          }
-
-          if (!r.responses) {
-            return;
-          }
-
-          const isCustomResponse = Object.keys(options?.controllers ?? {}).includes(name);
-          if (isCustomResponse) {
-            return [
-              `export function ${name}(info: Parameters<HttpResponseResolver>[0]) {`,
-              `  return controllers.${name}(info);`,
-              `};\n`,
-            ].join('\n');
-          }
-
-          const jsonResponseKey = Object.keys(r.responses).filter(r => r.startsWith('application/json'))[0];
-          const fakerResult = transformJSONSchemaToFakerCode(r.responses?.[jsonResponseKey]);
-          if (options?.static) {
-            vm.runInContext(`result = ${fakerResult};`, context);
-          }
-
-          return [
-            `export function `,
-            `${name}() { `,
-            `return ${options?.static ? JSON.stringify(context.result) : fakerResult} `,
-            `};\n`,
-          ].join('\n');
-        })
-        .join('\n'),
-    )
-    .join('\n');
-}
-
-export function transformToHandlerCode(operationCollection: TOperation[]): string {
-  return operationCollection
-    .map(op => {
-      return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
-        const resultArray = [${op.response.map(response => {
-          const identifier = getResIdentifierName(response);
-          const status = parseInt(response?.code!);
-          const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
-          const result = `{
-            status: ${status},
-            responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
-            body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
-          }`;
-
-          return result;
-        })}];
-
-        const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length]
-        
-        return new HttpResponse(JSON.stringify(selectedResult.body), {
-          status: selectedResult.status,
-          headers: {
-            'Content-Type': selectedResult.responseType
-          }
-        })
-      }),\n`;
-    })
-    .join('  ')
-    .trimEnd();
+  return camelCase(`get_${res.id}_${res.code}_response`);
 }
 
 export function transformToDtoImportCode(operations: TOperation[]) {

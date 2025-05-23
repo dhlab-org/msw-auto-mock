@@ -1,5 +1,4 @@
 import { HttpResponseResolver } from 'msw';
-import { ResponseMap } from './transform';
 import { OpenAPIV3 } from 'openapi-types';
 
 export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
@@ -37,5 +36,11 @@ export type TOperation = {
   request: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
   operationId: OpenAPIV3.OperationObject['operationId'];
-  response: ResponseMap[];
+  response: TResponseMap[];
+};
+
+export type TResponseMap = {
+  code: string;
+  id: string;
+  responses?: Record<string, OpenAPIV3.SchemaObject>;
 };
