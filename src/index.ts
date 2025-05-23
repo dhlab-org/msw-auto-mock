@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit';
 import path from 'path';
-import { TypeDefinitionGenerator } from './type-definition-generator';
+import { TypeDefinitionGenerator } from './type-definition/generator';
 import { HandlerGenerator } from './handler-generator';
 import { MSWServerGenerator } from './msw-server-generator';
 import { Operation } from './operation';
