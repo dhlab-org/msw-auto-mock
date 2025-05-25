@@ -1,8 +1,8 @@
 import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
 import path from 'path';
-import { Operation } from '../operation';
+import { IOperation } from '../operation';
 import { writeFile } from '../utils';
-import { ControllerTypeTemplate } from './template';
+import { ControllerTypeTemplate, IControllerTypeTemplate } from './template';
 
 interface ITypeGenerator {
   generate(targetFolder: string): Promise<void>;
@@ -13,11 +13,11 @@ type TEntityContent = {
   content: string;
 };
 class TypeDefinitionGenerator implements ITypeGenerator {
-  private readonly operation: Operation;
-  private readonly controllerTypeTemplate: ControllerTypeTemplate;
+  private readonly operation: IOperation;
+  private readonly controllerTypeTemplate: IControllerTypeTemplate;
   private readonly OUTPUT_DIR = '__generated__';
 
-  constructor(operation: Operation) {
+  constructor(operation: IOperation) {
     this.operation = operation;
     this.controllerTypeTemplate = new ControllerTypeTemplate();
   }

@@ -1,5 +1,5 @@
 import path from 'path';
-import { HandlerGenerator } from './handler-generator';
+import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server-generator';
 import { Operation } from './operation';
 import { Swagger } from './swagger';

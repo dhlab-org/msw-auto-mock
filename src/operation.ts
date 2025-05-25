@@ -138,7 +138,7 @@ class Operation implements IOperation {
   }
 }
 
-export { Operation };
+export { Operation, type IOperation };
 
 type TOperationDefinition = {
   verb: string;

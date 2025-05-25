@@ -61,6 +61,7 @@ class MSWServerGenerator implements IMSWServerGenerator {
 export { MSWServerGenerator };
 
 type ServerType = 'node' | 'browser' | 'native';
+
 type ServerConfig = {
   import: string;
   from: string;

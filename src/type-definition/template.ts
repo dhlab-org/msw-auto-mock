@@ -90,4 +90,4 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
   }
 }
 
-export { ControllerTypeTemplate };
+export { ControllerTypeTemplate, type IControllerTypeTemplate };
