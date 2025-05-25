@@ -1,4 +1,4 @@
-import { isString, mapValues } from 'es-toolkit';
+import { isString } from 'es-toolkit';
 import path from 'path';
 import { type ApiEndpointContract } from '../apiEndpoint';
 import { type SwaggerContract } from '../swagger';
@@ -14,8 +14,8 @@ class HandlerGenerator implements GeneratorContract {
   private readonly options: TOptions;
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly swagger: SwaggerContract;
-  private readonly OUTPUT_DIR = 'handlers';
-  private template: HandlerTemplateContract;
+  private readonly OUTPUT_DIR = '__handlers__';
+  private readonly template: HandlerTemplateContract;
 
   constructor(options: TOptions, apiEndpoint: ApiEndpointContract, swagger: SwaggerContract) {
     this.options = options;
@@ -25,34 +25,29 @@ class HandlerGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    await this.#generateHandlersByEntity(targetFolder);
-    await this.#generateCombinedHandler(targetFolder);
+    await Promise.all([this.#generateHandlersByEntity(targetFolder), this.#generateCombinedHandler(targetFolder)]);
   }
 
-  async #generateHandlersByEntity(targetFolder: string) {
-    const templatesByEntity = mapValues(this.apiEndpoint.byEntity, (entityOperations, entity) => {
-      return isString(entity) ? this.template.ofEntity(entityOperations, entity, this.#templateContext()) : null;
-    });
-
+  async #generateHandlersByEntity(targetFolder: string): Promise<void> {
     await Promise.all(
-      Object.entries(templatesByEntity).map(async ([entity, template]) => {
-        if (!template) return;
-
-        await writeFile(
-          path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), `${entity}.handlers.ts`),
-          template,
-        );
-      }),
+      Object.entries(this.apiEndpoint.byEntity)
+        .filter(([entity]) => isString(entity))
+        .map(async ([entity, entityOperations]) => {
+          const template = this.template.ofEntity(entityOperations, entity, this.#templateContext());
+          const filePath = path.resolve(
+            process.cwd(),
+            path.join(targetFolder, this.OUTPUT_DIR),
+            `${entity}.handlers.ts`,
+          );
+          await writeFile(filePath, template);
+        }),
     );
   }
 
-  async #generateCombinedHandler(targetFolder: string) {
-    const combinedTemplate = this.template.ofAllCombined(this.apiEndpoint.entities);
-
-    await writeFile(
-      path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), `index.ts`),
-      combinedTemplate,
-    );
+  async #generateCombinedHandler(targetFolder: string): Promise<void> {
+    const template = this.template.ofAllCombined(this.apiEndpoint.entities);
+    const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), 'index.ts');
+    await writeFile(filePath, template);
   }
 
   #templateContext(): TTemplateContext {

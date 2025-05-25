@@ -11,8 +11,6 @@ type ApiEndpointContract = {
   entities: TEntity[];
 };
 
-type TEntity = string;
-
 class ApiEndpoint implements ApiEndpointContract {
   private readonly swagger: SwaggerContract;
   private readonly options: TOptions;
@@ -27,7 +25,7 @@ class ApiEndpoint implements ApiEndpointContract {
   get collection() {
     const operationDefinitions = this.#getOperationDefinitions();
     return operationDefinitions
-      .filter(op => this.#operationFilter(op))
+      .filter(op => this.#isValidOperation(op))
       .map(op => this.#codeFilter(op))
       .map(definition => this.#toOperation(definition));
   }
@@ -63,22 +61,25 @@ class ApiEndpoint implements ApiEndpointContract {
     );
   }
 
-  #operationFilter(operation: TOperationDefinition): boolean {
-    const includes = this.options?.includes?.split(',') ?? null;
-    const excludes = this.options?.excludes?.split(',') ?? null;
+  #isValidOperation(operation: TOperationDefinition): boolean {
+    const { includes, excludes } = this.options;
 
-    if (includes && !includes.includes(operation.path)) {
+    if (!includes && !excludes) {
+      return true;
+    }
+
+    const allowedPaths = includes?.split(',') ?? [];
+    const excludedPaths = excludes?.split(',') ?? [];
+
+    if (allowedPaths.length > 0 && !allowedPaths.includes(operation.path)) {
       return false;
     }
-    if (excludes?.includes(operation.path)) {
-      return false;
-    }
-    return true;
+
+    return !excludedPaths.includes(operation.path);
   }
 
   #codeFilter(operation: TOperationDefinition): TOperationDefinition {
     const rawCodes = this.options?.codes;
-
     const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
 
     const responses = Object.entries(operation.responses)
@@ -139,6 +140,8 @@ class ApiEndpoint implements ApiEndpointContract {
 }
 
 export { ApiEndpoint, type ApiEndpointContract };
+
+type TEntity = string;
 
 type TOperationDefinition = {
   verb: string;

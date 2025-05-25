@@ -1,4 +1,4 @@
-import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
+import { compact, isString } from 'es-toolkit';
 import path from 'path';
 import { type ApiEndpointContract } from '../apiEndpoint';
 import { writeFile } from '../utils';
@@ -8,14 +8,10 @@ type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
 };
 
-type TEntityContent = {
-  entity: string;
-  content: string;
-};
 class TypeDefinitionGenerator implements GeneratorContract {
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly template: ControllerTypeTemplateContract;
-  private readonly OUTPUT_DIR = '__generated__';
+  private readonly OUTPUT_DIR = '__types__';
 
   constructor(apiEndpoint: ApiEndpointContract) {
     this.apiEndpoint = apiEndpoint;
@@ -23,41 +19,32 @@ class TypeDefinitionGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    const entityTypeList: TEntityContent[] = compact(Object.values(this.#entityTypeDefinitions()));
-    const outputDir = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR));
-
-    await this.#generateEntityTypeFiles(entityTypeList, outputDir);
-    await this.#generateCombinedTypeFile(outputDir);
+    await Promise.all([this.#generateEntityTypeFiles(targetFolder), this.#generateCombinedTypeFile(targetFolder)]);
   }
 
-  #entityTypeDefinitions(): Record<string, TEntityContent | null> {
-    return mapValues(this.apiEndpoint.byEntity, (operations, entity) => {
-      if (!isString(entity)) return null;
+  async #generateEntityTypeFiles(targetFolder: string): Promise<void> {
+    const entityTypeList = compact(
+      Object.entries(this.apiEndpoint.byEntity).map(([entity, operations]) => {
+        if (!isString(entity)) return null;
+        return {
+          entity,
+          template: this.template.ofEntity(operations, entity),
+        };
+      }),
+    );
 
-      return {
-        entity,
-        content: `
-          import type { HttpResponseResolver } from "msw";
-          ${this.template.dtoImports(operations)}
-          
-          export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${this.template.entityType(operations)}
-          }
-          `,
-      };
-    });
-  }
-
-  async #generateEntityTypeFiles(entityTypeList: TEntityContent[], outputDir: string): Promise<void> {
     await Promise.all(
-      entityTypeList.map(async ({ entity, content }) => {
-        await writeFile(path.join(outputDir, `${entity}.type.ts`), content);
+      entityTypeList.map(async ({ entity, template }) => {
+        const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), `${entity}.type.ts`);
+        await writeFile(filePath, template);
       }),
     );
   }
 
-  async #generateCombinedTypeFile(outputDir: string): Promise<void> {
-    await writeFile(path.join(outputDir, 'index.ts'), this.template.ofAllCombined(this.apiEndpoint.entities));
+  async #generateCombinedTypeFile(targetFolder: string): Promise<void> {
+    const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), 'index.ts');
+    const template = this.template.ofAllCombined(this.apiEndpoint.entities);
+    await writeFile(filePath, template);
   }
 }
 

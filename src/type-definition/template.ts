@@ -3,34 +3,50 @@ import { TOperation } from '../types';
 import { ControllerTypeAdapter } from './adapter';
 
 type TemplateContract = {
-  dtoImports(operations: TOperation[]): string;
-  entityType(operations: TOperation[]): string;
+  ofEntity(operations: TOperation[], entity: string): string;
   ofAllCombined(entityList: string[]): string;
 };
 
 class ControllerTypeTemplate implements TemplateContract {
   private readonly DTO_IMPORT_PATH = '@/shared/api/dto';
 
-  dtoImports(operations: TOperation[]): string {
-    const dtoList = this.#dtoTypes(operations);
-    return `import type { ${Array.from(dtoList).join(', ')} } from '${this.DTO_IMPORT_PATH}';`;
-  }
-
-  entityType(operations: TOperation[]): string {
-    return this.#handlerMethodTypes(operations)
+  ofEntity(operations: TOperation[], entity: string): string {
+    const imports = `import type { ${Array.from(this.#dtoTypes(operations)).join(', ')} } from '${this.DTO_IMPORT_PATH}';`;
+    const entityType = this.#handlerMethodTypes(operations)
       .map(handler => {
         return `
-          ${handler.identifierName}: (info: Parameters<HttpResponseResolver<${handler.pathParams}, ${handler.requestBodyType}>>[0])=> ${handler.responseBodyType} | Promise<${handler.responseBodyType}>;
-        `;
+        ${handler.identifierName}: (info: Parameters<HttpResponseResolver<${handler.pathParams}, ${handler.requestBodyType}>>[0])=> ${handler.responseBodyType} | Promise<${handler.responseBodyType}>;
+      `;
       })
       .join('\n');
+
+    return `
+      import type { HttpResponseResolver } from "msw";
+      ${imports}
+      
+      export type ${pascalCase(`T_${entity}_Controllers`)} = {
+        ${entityType}
+      }
+    `;
   }
 
   ofAllCombined(entityList: string[]): string {
+    const imports = entityList
+      .map(entity => {
+        return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
+      })
+      .join('\n');
+
+    const entityTypeUnion = entityList
+      .map(entity => {
+        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
+      })
+      .join(' | ');
+
     return `
-      ${this.#formatEntityImports(entityList)}
+      ${imports}
     
-      export type TControllers = ${this.#formatEntityTypeUnion(entityList)}
+      export type TControllers = ${entityTypeUnion}
     `;
   }
 
@@ -71,22 +87,6 @@ class ControllerTypeTemplate implements TemplateContract {
     }
 
     return types;
-  }
-
-  #formatEntityImports(entityList: string[]): string {
-    return entityList
-      .map(entity => {
-        return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
-      })
-      .join('\n');
-  }
-
-  #formatEntityTypeUnion(entityList: string[]): string {
-    return entityList
-      .map(entity => {
-        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
-      })
-      .join(' | ');
   }
 }
 

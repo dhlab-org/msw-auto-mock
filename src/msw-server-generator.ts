@@ -26,8 +26,8 @@ class MSWServerGenerator implements GeneratorContract {
   }
 
   async #generateServer(targetFolder: string, type: TServerType): Promise<void> {
-    const content = this.#templateOf(type);
-    await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), content);
+    const template = this.#templateOf(type);
+    await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), template);
   }
 
   #templateOf(type: TServerType): string {
