@@ -4,10 +4,10 @@ import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
 import { getResIdentifierName } from '../transform';
 import { TOperation } from '../types';
 
-interface IHandlerTemplate {
+type TemplateContract = {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string;
   ofAllCombined(entities: string[]): string;
-}
+};
 
 type TContext = {
   baseURL: string;
@@ -17,7 +17,7 @@ type TContext = {
   controllers: Record<string, unknown>;
 };
 
-class HandlerTemplate implements IHandlerTemplate {
+class HandlerTemplate implements TemplateContract {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext) {
     const imports = [
       `import { HttpResponse, http, type HttpResponseResolver  } from 'msw';`,
@@ -163,4 +163,4 @@ class HandlerTemplate implements IHandlerTemplate {
   }
 }
 
-export { HandlerTemplate, type IHandlerTemplate, type TContext };
+export { HandlerTemplate, type TemplateContract as HandlerTemplateContract, type TContext };

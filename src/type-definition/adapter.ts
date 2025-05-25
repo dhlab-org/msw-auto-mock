@@ -3,15 +3,15 @@ import { TOperation, TResponseMap } from '../types';
 import { camelCase } from 'es-toolkit';
 import { getResIdentifierName } from '../transform';
 
-interface IControllerTypeAdapter {
+type AdapterContract = {
   pathParamsType: string;
   requestDtoTypeName: string | null;
   responseDtoTypeName(responses: TResponseMap['responses']): string | null;
   responseBodyType(responses: TResponseMap['responses']): string;
   handlerIdentifierName(response: TResponseMap): string;
-}
+};
 
-class ControllerTypeAdapter implements IControllerTypeAdapter {
+class ControllerTypeAdapter implements AdapterContract {
   constructor(private readonly operation: TOperation) {}
 
   get pathParamsType(): string {

@@ -1,7 +1,7 @@
 import path from 'path';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server-generator';
-import { Operation } from './operation';
+import { ApiEndpoint } from './apiEndpoint';
 import { Swagger } from './swagger';
 import { TypeDefinitionGenerator } from './type-definition/generator';
 import { TOptions } from './types';
@@ -18,18 +18,17 @@ async function generateMocks(options: TOptions) {
   }
 
   const swagger = await Swagger.load(options.input);
-
-  const operation = new Operation(swagger, options);
+  const apiEndpoint = new ApiEndpoint(swagger, options);
 
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new HandlerGenerator(options, operation, swagger).generate(targetFolder);
+  await new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder);
   await new MSWServerGenerator(options.environment).generate(targetFolder);
-  await new TypeDefinitionGenerator(operation).generate(targetFolder);
+  await new TypeDefinitionGenerator(apiEndpoint).generate(targetFolder);
 
   return {
-    operation,
+    apiEndpoint,
     targetFolder,
   };
 }

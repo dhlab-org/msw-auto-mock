@@ -1,25 +1,25 @@
 import { isString, mapValues } from 'es-toolkit';
 import path from 'path';
-import { type IOperation } from '../operation';
-import { Swagger } from '../swagger';
+import { type ApiEndpointContract } from '../apiEndpoint';
+import { type SwaggerContract } from '../swagger';
 import { TOptions } from '../types';
 import { writeFile } from '../utils';
-import { HandlerTemplate, type IHandlerTemplate, type TContext as TTemplateContext } from './template';
+import { HandlerTemplate, type HandlerTemplateContract, type TContext as TTemplateContext } from './template';
 
-interface IHandlerGenerator {
+type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
-}
+};
 
-class HandlerGenerator implements IHandlerGenerator {
+class HandlerGenerator implements GeneratorContract {
   private readonly options: TOptions;
-  private readonly operation: IOperation;
-  private readonly swagger: Swagger;
+  private readonly apiEndpoint: ApiEndpointContract;
+  private readonly swagger: SwaggerContract;
   private readonly OUTPUT_DIR = 'handlers';
-  private template: IHandlerTemplate;
+  private template: HandlerTemplateContract;
 
-  constructor(options: TOptions, operation: IOperation, swagger: Swagger) {
+  constructor(options: TOptions, apiEndpoint: ApiEndpointContract, swagger: SwaggerContract) {
     this.options = options;
-    this.operation = operation;
+    this.apiEndpoint = apiEndpoint;
     this.swagger = swagger;
     this.template = new HandlerTemplate();
   }
@@ -30,7 +30,7 @@ class HandlerGenerator implements IHandlerGenerator {
   }
 
   async #generateHandlersByEntity(targetFolder: string) {
-    const templatesByEntity = mapValues(this.operation.byEntity, (entityOperations, entity) => {
+    const templatesByEntity = mapValues(this.apiEndpoint.byEntity, (entityOperations, entity) => {
       return isString(entity) ? this.template.ofEntity(entityOperations, entity, this.#templateContext()) : null;
     });
 
@@ -47,7 +47,7 @@ class HandlerGenerator implements IHandlerGenerator {
   }
 
   async #generateCombinedHandler(targetFolder: string) {
-    const combinedTemplate = this.template.ofAllCombined(this.operation.entities);
+    const combinedTemplate = this.template.ofAllCombined(this.apiEndpoint.entities);
 
     await writeFile(
       path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), `index.ts`),

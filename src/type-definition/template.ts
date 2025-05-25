@@ -2,13 +2,13 @@ import { pascalCase } from 'es-toolkit';
 import { TOperation } from '../types';
 import { ControllerTypeAdapter } from './adapter';
 
-interface IControllerTypeTemplate {
+type TemplateContract = {
   dtoImports(operations: TOperation[]): string;
   entityType(operations: TOperation[]): string;
-  combined(entityList: string[]): string;
-}
+  ofAllCombined(entityList: string[]): string;
+};
 
-class ControllerTypeTemplate implements IControllerTypeTemplate {
+class ControllerTypeTemplate implements TemplateContract {
   private readonly DTO_IMPORT_PATH = '@/shared/api/dto';
 
   dtoImports(operations: TOperation[]): string {
@@ -26,7 +26,7 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
       .join('\n');
   }
 
-  combined(entityList: string[]): string {
+  ofAllCombined(entityList: string[]): string {
     return `
       ${this.#formatEntityImports(entityList)}
     
@@ -90,4 +90,4 @@ class ControllerTypeTemplate implements IControllerTypeTemplate {
   }
 }
 
-export { ControllerTypeTemplate, type IControllerTypeTemplate };
+export { ControllerTypeTemplate, type TemplateContract as ControllerTypeTemplateContract };

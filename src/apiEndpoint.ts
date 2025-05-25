@@ -1,24 +1,24 @@
 import { camelCase, groupBy } from 'es-toolkit';
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
-import { TOperation, TOptions } from './types';
+import { type TOperation, type TOptions } from './types';
 import { toExpressLikePath } from './utils';
-import { Swagger } from './swagger';
+import { type SwaggerContract } from './swagger';
 
-interface IOperation {
+type ApiEndpointContract = {
   collection: TOperation[];
   byEntity: Record<TEntity, TOperation[]>;
   entities: TEntity[];
-}
+};
 
 type TEntity = string;
 
-class Operation implements IOperation {
-  private readonly swagger: Swagger;
+class ApiEndpoint implements ApiEndpointContract {
+  private readonly swagger: SwaggerContract;
   private readonly options: TOptions;
   private readonly apiGenerator: ApiGenerator;
 
-  constructor(swagger: Swagger, options: TOptions) {
+  constructor(swagger: SwaggerContract, options: TOptions) {
     this.swagger = swagger;
     this.options = options;
     this.apiGenerator = new ApiGenerator(swagger.apiDoc, {});
@@ -138,7 +138,7 @@ class Operation implements IOperation {
   }
 }
 
-export { Operation, type IOperation };
+export { ApiEndpoint, type ApiEndpointContract };
 
 type TOperationDefinition = {
   verb: string;

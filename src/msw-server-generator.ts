@@ -2,11 +2,11 @@ import path from 'path';
 import { writeFile } from './utils';
 import { TOptions } from './types';
 
-interface IMSWServerGenerator {
+type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
-}
+};
 
-class MSWServerGenerator implements IMSWServerGenerator {
+class MSWServerGenerator implements GeneratorContract {
   private readonly environment: TOptions['environment'];
 
   constructor(environment: TOptions['environment']) {
@@ -14,7 +14,7 @@ class MSWServerGenerator implements IMSWServerGenerator {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    const config: Record<NonNullable<TOptions['environment']> | 'default', ServerType[]> = {
+    const config: Record<NonNullable<TOptions['environment']> | 'default', TServerType[]> = {
       next: ['node', 'browser'],
       react: ['browser'],
       'react-native': ['native'],
@@ -25,13 +25,13 @@ class MSWServerGenerator implements IMSWServerGenerator {
     await Promise.all(environments.map(env => this.#generateServer(targetFolder, env)));
   }
 
-  async #generateServer(targetFolder: string, type: ServerType): Promise<void> {
+  async #generateServer(targetFolder: string, type: TServerType): Promise<void> {
     const content = this.#getServerContent(type);
     await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), content);
   }
 
-  #getServerContent(type: ServerType): string {
-    const config: Record<ServerType, ServerConfig> = {
+  #getServerContent(type: TServerType): string {
+    const config: Record<TServerType, TServerConfig> = {
       node: {
         import: 'setupServer',
         from: 'msw/node',
@@ -60,9 +60,9 @@ class MSWServerGenerator implements IMSWServerGenerator {
 
 export { MSWServerGenerator };
 
-type ServerType = 'node' | 'browser' | 'native';
+type TServerType = 'node' | 'browser' | 'native';
 
-type ServerConfig = {
+type TServerConfig = {
   import: string;
   from: string;
   export: string;

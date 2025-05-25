@@ -4,12 +4,12 @@ import type { OpenAPIV3 } from 'openapi-types';
 import converter from 'swagger2openapi';
 import { TOptions } from './types';
 
-interface ISwagger {
+type SwaggerContract = {
   apiDoc: OpenAPIV3.Document;
   baseUrl: string;
-}
+};
 
-class Swagger implements ISwagger {
+class Swagger implements SwaggerContract {
   private readonly document: OpenAPIV3.Document;
 
   private constructor(document: OpenAPIV3.Document) {
@@ -45,4 +45,4 @@ class Swagger implements ISwagger {
   }
 }
 
-export { Swagger };
+export { Swagger, type SwaggerContract };

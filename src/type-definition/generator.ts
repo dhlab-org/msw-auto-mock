@@ -1,25 +1,25 @@
 import { compact, isString, mapValues, pascalCase } from 'es-toolkit';
 import path from 'path';
-import { IOperation } from '../operation';
+import { type ApiEndpointContract } from '../apiEndpoint';
 import { writeFile } from '../utils';
-import { ControllerTypeTemplate, IControllerTypeTemplate } from './template';
+import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 
-interface ITypeGenerator {
+type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
-}
+};
 
 type TEntityContent = {
   entity: string;
   content: string;
 };
-class TypeDefinitionGenerator implements ITypeGenerator {
-  private readonly operation: IOperation;
-  private readonly controllerTypeTemplate: IControllerTypeTemplate;
+class TypeDefinitionGenerator implements GeneratorContract {
+  private readonly apiEndpoint: ApiEndpointContract;
+  private readonly template: ControllerTypeTemplateContract;
   private readonly OUTPUT_DIR = '__generated__';
 
-  constructor(operation: IOperation) {
-    this.operation = operation;
-    this.controllerTypeTemplate = new ControllerTypeTemplate();
+  constructor(apiEndpoint: ApiEndpointContract) {
+    this.apiEndpoint = apiEndpoint;
+    this.template = new ControllerTypeTemplate();
   }
 
   async generate(targetFolder: string): Promise<void> {
@@ -31,17 +31,17 @@ class TypeDefinitionGenerator implements ITypeGenerator {
   }
 
   #entityTypeDefinitions(): Record<string, TEntityContent | null> {
-    return mapValues(this.operation.byEntity, (operations, entity) => {
+    return mapValues(this.apiEndpoint.byEntity, (operations, entity) => {
       if (!isString(entity)) return null;
 
       return {
         entity,
         content: `
           import type { HttpResponseResolver } from "msw";
-          ${this.controllerTypeTemplate.dtoImports(operations)}
+          ${this.template.dtoImports(operations)}
           
           export type ${pascalCase(`T_${entity}_Controllers`)} = {
-            ${this.controllerTypeTemplate.entityType(operations)}
+            ${this.template.entityType(operations)}
           }
           `,
       };
@@ -57,7 +57,7 @@ class TypeDefinitionGenerator implements ITypeGenerator {
   }
 
   async #generateCombinedTypeFile(outputDir: string): Promise<void> {
-    await writeFile(path.join(outputDir, 'index.ts'), this.controllerTypeTemplate.combined(this.operation.entities));
+    await writeFile(path.join(outputDir, 'index.ts'), this.template.ofAllCombined(this.apiEndpoint.entities));
   }
 }
 
