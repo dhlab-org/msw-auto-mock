@@ -1,14 +1,13 @@
-import { match, P } from 'ts-pattern';
-import { TOperation, TResponseMap } from '../types';
 import { camelCase } from 'es-toolkit';
-import { getResIdentifierName } from '../transform';
+import { match, P } from 'ts-pattern';
+import { TOperation, TResponse } from '../types';
 
 type AdapterContract = {
   pathParamsType: string;
   requestDtoTypeName: string | null;
-  responseDtoTypeName(responses: TResponseMap['responses']): string | null;
-  responseBodyType(responses: TResponseMap['responses']): string;
-  handlerIdentifierName(response: TResponseMap): string;
+  responseDtoTypeName(responses: TResponse['responses']): string | null;
+  responseBodyType(responses: TResponse['responses']): string;
+  handlerIdentifierName(response: TResponse): string;
 };
 
 class ControllerTypeAdapter implements AdapterContract {
@@ -37,7 +36,7 @@ class ControllerTypeAdapter implements AdapterContract {
       .otherwise(() => null);
   }
 
-  responseDtoTypeName(responses: TResponseMap['responses']): string | null {
+  responseDtoTypeName(responses: TResponse['responses']): string | null {
     return (
       match(responses)
         .with(
@@ -53,7 +52,7 @@ class ControllerTypeAdapter implements AdapterContract {
     );
   }
 
-  responseBodyType(responses: TResponseMap['responses']): string {
+  responseBodyType(responses: TResponse['responses']): string {
     return match(responses)
       .with(
         { 'application/json': { title: P.string, properties: P.nonNullable } },
@@ -67,9 +66,9 @@ class ControllerTypeAdapter implements AdapterContract {
       .otherwise(() => 'null');
   }
 
-  handlerIdentifierName(response: TResponseMap): string {
+  handlerIdentifierName(response: TResponse): string {
     return (
-      getResIdentifierName(response) ||
+      camelCase(`get_${response.id}_${response.code}_response`) ||
       camelCase(`${this.operation.operationId}_${this.operation.verb}_${response.code}_Response`)
     );
   }

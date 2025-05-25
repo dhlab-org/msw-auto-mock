@@ -26,11 +26,11 @@ class MSWServerGenerator implements GeneratorContract {
   }
 
   async #generateServer(targetFolder: string, type: TServerType): Promise<void> {
-    const content = this.#getServerContent(type);
+    const content = this.#templateOf(type);
     await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), content);
   }
 
-  #getServerContent(type: TServerType): string {
+  #templateOf(type: TServerType): string {
     const config: Record<TServerType, TServerConfig> = {
       node: {
         import: 'setupServer',

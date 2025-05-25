@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
+import { camelCase } from 'es-toolkit';
 import vm from 'node:vm';
 import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
-import { getResIdentifierName } from '../transform';
 import { TOperation } from '../types';
 
 type TemplateContract = {
@@ -86,7 +86,7 @@ class HandlerTemplate implements TemplateContract {
       .map(op => {
         return `http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
           const resultArray = [${op.response.map(response => {
-            const identifier = getResIdentifierName(response);
+            const identifier = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : '';
             const status = parseInt(response?.code!);
             const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
             const result = `{
@@ -126,10 +126,7 @@ class HandlerTemplate implements TemplateContract {
       .map(op =>
         op.response
           .map(r => {
-            const name = getResIdentifierName(r);
-            if (!name) {
-              return '';
-            }
+            const name = r.id ? camelCase(`get_${r.id}_${r.code}_response`) : '';
 
             if (!r.responses) {
               return;

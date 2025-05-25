@@ -36,10 +36,10 @@ export type TOperation = {
   request: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
   operationId: OpenAPIV3.OperationObject['operationId'];
-  response: TResponseMap[];
+  response: TResponse[];
 };
 
-export type TResponseMap = {
+export type TResponse = {
   code: string;
   id: string;
   responses?: Record<string, OpenAPIV3.SchemaObject>;
