@@ -1,9 +1,9 @@
 import path from 'path';
 import { HandlerGenerator } from './handler/generator';
-import { MSWServerGenerator } from './msw-server-generator';
+import { MSWServerGenerator } from './msw-server/generator';
+import { TypeDefinitionGenerator } from './type-definition/generator';
 import { ApiEndpoint } from './apiEndpoint';
 import { Swagger } from './swagger';
-import { TypeDefinitionGenerator } from './type-definition/generator';
 import { TOptions } from './types';
 
 /**
