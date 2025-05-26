@@ -89,7 +89,7 @@ class HandlerTemplate implements TemplateContract {
       const resultArray = [${op.response.map(response => this.#responseObject(response))}];
       const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
     
-      return new HttpResponse(JSON.stringify(selectedResult.body), {
+      return new HttpResponse(selectedResult.body, {
         status: selectedResult.status,
         headers: {
           'Content-Type': selectedResult.responseType
@@ -101,12 +101,14 @@ class HandlerTemplate implements TemplateContract {
   #responseObject(response: TResponse): string {
     const identifier = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : '';
     const status = parseInt(response?.code!);
-    const responseType = response.responses ? Object.keys(response.responses)[0] : 'application/json';
+    const hasResponseBody = status !== 204 && status < 300; // 성공(2xx) 응답 중 204만 제외
+    const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
+    const body = hasResponseBody ? `${identifier ? `await ${identifier}(info)` : 'undefined'}` : 'undefined';
 
     return `{
       status: ${status},
-      responseType: ${status === 204 ? 'undefined' : `'${responseType}'`},
-      body: ${status === 204 ? 'undefined' : `${identifier ? `await ${identifier}(info)` : 'undefined'}`}
+      responseType: ${responseType ? `'${responseType}'` : undefined},
+      body: ${body === 'undefined' || responseType === 'text/event-stream' ? body : `JSON.stringify(${body})`}
     }`;
   }
 
@@ -133,7 +135,7 @@ class HandlerTemplate implements TemplateContract {
     if (isCustomResponse) {
       return `
         export function ${name}(info: Parameters<HttpResponseResolver>[0]) {
-          return controllers.${name}(info);
+          return (controllers as Required<typeof controllers>).${name}(info);
         };
       `;
     }

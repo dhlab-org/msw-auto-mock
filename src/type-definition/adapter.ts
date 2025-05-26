@@ -53,6 +53,11 @@ class ControllerTypeAdapter implements AdapterContract {
   }
 
   responseBodyType(responses: TResponse['responses']): string {
+    /**
+     * 스트리밍 응답 처리 방식
+     * - 현재: 외부에서 new ReadableStream을 내려주므로 ReadableStream | Promise<ReadableStream> 반환
+     * - 향후: application/json, text/event-stream 외 타입 추가 시 string | Promise<string> 반환 검토 필요 (내부에서 ReadableStream을 처리하도록)
+     */
     return match(responses)
       .with(
         { 'application/json': { title: P.string, properties: P.nonNullable } },
@@ -62,7 +67,7 @@ class ControllerTypeAdapter implements AdapterContract {
         { 'application/json': { title: P.string, items: { title: P.string } } },
         r => `${r['application/json'].items.title}Dto[]`,
       )
-      .with({ 'text/event-stream': { type: P.string } }, r => r['text/event-stream'].type)
+      .with({ 'text/event-stream': P.any }, () => 'ReadableStream')
       .otherwise(() => 'null');
   }
 
