@@ -25,7 +25,7 @@ class ApiEndpoint implements ApiEndpointContract {
   get collection() {
     const operationDefinitions = this.#getOperationDefinitions();
     return operationDefinitions
-      .filter(op => this.#isValidOperation(op))
+      .filter(op => this.#shouldIncludeOperation(op))
       .map(op => this.#codeFilter(op))
       .map(definition => this.#toOperation(definition));
   }
@@ -61,7 +61,7 @@ class ApiEndpoint implements ApiEndpointContract {
     );
   }
 
-  #isValidOperation(operation: TOperationDefinition): boolean {
+  #shouldIncludeOperation(operation: TOperationDefinition): boolean {
     const { includes, excludes } = this.options;
 
     if (!includes && !excludes) {
