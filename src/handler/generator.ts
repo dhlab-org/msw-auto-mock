@@ -30,17 +30,11 @@ class HandlerGenerator implements GeneratorContract {
 
   async #generateHandlersByEntity(targetFolder: string): Promise<void> {
     await Promise.all(
-      Object.entries(this.apiEndpoint.byEntity)
-        .filter(([entity]) => isString(entity))
-        .map(async ([entity, entityOperations]) => {
-          const template = this.template.ofEntity(entityOperations, entity, this.#templateContext());
-          const filePath = path.resolve(
-            process.cwd(),
-            path.join(targetFolder, this.OUTPUT_DIR),
-            `${entity}.handlers.ts`,
-          );
-          await writeFile(filePath, template);
-        }),
+      Object.entries(this.apiEndpoint.byEntity).map(async ([entity, entityOperations]) => {
+        const template = this.template.ofEntity(entityOperations, entity, this.#templateContext());
+        const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), `${entity}.handlers.ts`);
+        await writeFile(filePath, template);
+      }),
     );
   }
 

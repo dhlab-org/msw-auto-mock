@@ -25,7 +25,6 @@ class TypeDefinitionGenerator implements GeneratorContract {
   async #generateEntityTypeFiles(targetFolder: string): Promise<void> {
     const entityTypeList = compact(
       Object.entries(this.apiEndpoint.byEntity).map(([entity, operations]) => {
-        if (!isString(entity)) return null;
         return {
           entity,
           template: this.template.ofEntity(operations, entity),
