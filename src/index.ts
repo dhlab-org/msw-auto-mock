@@ -23,9 +23,11 @@ async function generateMocks(options: TOptions) {
   const outputFolder = options.outputDir || 'src/app/mocks';
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
-  await new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder);
-  await new MSWServerGenerator(options.environment).generate(targetFolder);
-  await new TypeDefinitionGenerator(apiEndpoint).generate(targetFolder);
+  await Promise.all([
+    new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
+    new MSWServerGenerator(options.environment).generate(targetFolder),
+    new TypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
+  ]);
 
   return {
     apiEndpoint,
