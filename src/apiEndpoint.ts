@@ -79,25 +79,33 @@ class ApiEndpoint implements ApiEndpointContract {
   }
 
   #codeFilter(operation: TOperationDefinition): TOperationDefinition {
+    const filteredResponses = this.#filteredResponsesByCodes(operation.responses);
+    const transformedResponses = this.#responsesToKeyValueObject(filteredResponses);
+
+    return {
+      ...operation,
+      responses: transformedResponses,
+    };
+  }
+
+  #filteredResponsesByCodes(responses: OpenAPIV3.ResponsesObject) {
     const rawCodes = this.options?.codes;
     const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
 
-    const responses = Object.entries(operation.responses)
-      .filter(([code]) => {
-        if (codes && !codes.includes(code)) {
-          return false;
-        }
-        return true;
-      })
+    return Object.entries(responses).filter(([code]) => {
+      if (codes && !codes.includes(code)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  #responsesToKeyValueObject(filteredResponses: [string, OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject][]) {
+    return filteredResponses
       .map(([code, response]) => ({
         [code]: response,
       }))
       .reduce((acc, curr) => Object.assign(acc, curr), {} as OpenAPIV3.ResponsesObject);
-
-    return {
-      ...operation,
-      responses,
-    };
   }
 
   #toOperation(definition: TOperationDefinition): TOperation {
