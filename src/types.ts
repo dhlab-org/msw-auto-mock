@@ -35,7 +35,6 @@ export type TOperation = {
   path: string;
   request: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
-  operationId: OpenAPIV3.OperationObject['operationId'];
   response: TResponse[];
 };
 

@@ -55,7 +55,6 @@ class ApiEndpoint implements ApiEndpointContract {
                 responses: operation.responses,
                 requests: operation.requestBody,
                 parameters: operation.parameters,
-                operationId: operation.operationId,
               };
             }),
     );
@@ -109,12 +108,12 @@ class ApiEndpoint implements ApiEndpointContract {
   }
 
   #toOperation(definition: TOperationDefinition): TOperation {
-    const { verb, path, responses, id, requests, parameters, operationId } = definition;
+    const { verb, path, responses, id, requests, parameters } = definition;
 
     const responseMap = Object.entries(responses).map(([code, response]) => {
       const content = this.apiGenerator.resolve(response).content;
       if (!content) {
-        return { code, id: '', responses: {} };
+        return { code, id, responses: {} };
       }
 
       const resolvedResponse = Object.keys(content).reduce(
@@ -142,7 +141,6 @@ class ApiEndpoint implements ApiEndpointContract {
       response: responseMap,
       request: requests,
       parameters: parameters,
-      operationId: operationId,
     };
   }
 }
@@ -156,7 +154,6 @@ type TOperationDefinition = {
   path: string;
   requests: OpenAPIV3.OperationObject['requestBody'];
   parameters: OpenAPIV3.OperationObject['parameters'];
-  operationId: OpenAPIV3.OperationObject['operationId'];
   id: string;
   responses: OpenAPIV3.ResponsesObject;
 };

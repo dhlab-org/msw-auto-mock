@@ -1,4 +1,3 @@
-import { isString } from 'es-toolkit';
 import path from 'path';
 import { type ApiEndpointContract } from '../apiEndpoint';
 import { type SwaggerContract } from '../swagger';

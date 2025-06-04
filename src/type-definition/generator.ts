@@ -1,4 +1,4 @@
-import { compact, isString } from 'es-toolkit';
+import { compact } from 'es-toolkit';
 import path from 'path';
 import { type ApiEndpointContract } from '../apiEndpoint';
 import { writeFile } from '../utils';

@@ -72,9 +72,7 @@ class ControllerTypeAdapter implements AdapterContract {
   }
 
   handlerIdentifierName(response: TResponse): string {
-    return response.id
-      ? camelCase(`get_${response.id}_${response.code}_response`)
-      : camelCase(`${this.operation.operationId}_${this.operation.verb}_${response.code}_Response`);
+    return camelCase(`get_${response.id}_${response.code}_response`);
   }
 }
 
