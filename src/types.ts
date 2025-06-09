@@ -1,6 +1,7 @@
-import { HttpResponseResolver } from "msw";
+import { HttpResponseResolver } from 'msw';
+import { OpenAPIV3 } from 'openapi-types';
 
-export type ProgrammaticOptions<TControllers =Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
+export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
   input: string;
   outputDir?: string;
   maxArrayLength?: number;
@@ -27,4 +28,18 @@ export type ProgrammaticOptions<TControllers =Record<string, (info: Parameters<H
    * default: '@/app/mocks/controllers'
    */
   controllerPath?: string;
+};
+
+export type TOperation = {
+  verb: string;
+  path: string;
+  request: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
+  response: TResponse[];
+};
+
+export type TResponse = {
+  code: string;
+  id: string;
+  responses?: Record<string, OpenAPIV3.SchemaObject>;
 };
