@@ -28,6 +28,11 @@ export type TOptions<TControllers = Record<string, (info: Parameters<HttpRespons
    * default: '@/app/mocks/controllers'
    */
   controllerPath?: string;
+  /**
+   * 엔티티 분류에 사용할 URL 경로 인덱스
+   * default: 1
+   */
+  entityPathIndex?: number;
 };
 
 export type TOperation = {
