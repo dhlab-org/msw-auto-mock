@@ -32,7 +32,7 @@ class ApiEndpoint implements ApiEndpointContract {
 
   get byEntity() {
     const operations = this.collection;
-    return groupBy(operations, op => op.path.split('/')[1]);
+    return groupBy(operations, op => op.path.split('/')[this.options.entityPathIndex ?? 1]);
   }
 
   get entities() {
