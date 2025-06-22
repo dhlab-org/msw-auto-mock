@@ -48,3 +48,9 @@ export type TResponse = {
   id: string;
   responses?: Record<string, OpenAPIV3.SchemaObject>;
 };
+
+export type TStreamingEvent = {
+  event: 'message_start' | 'message_delta' | 'message_end';
+  data: string;
+  delay?: number;
+};
