@@ -124,9 +124,9 @@ class HandlerTemplate implements TemplateContract {
     
       return new HttpResponse(selectedResult.body, {
         status: selectedResult.status,
-        headers: {
+        headers: selectedResult.responseType ? {
           'Content-Type': selectedResult.responseType
-        }
+        } : undefined
       });
     }),\n`;
   }
