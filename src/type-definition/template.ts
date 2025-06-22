@@ -37,16 +37,18 @@ class ControllerTypeTemplate implements TemplateContract {
       })
       .join('\n');
 
-    const entityTypeUnion = entityList
+    const entityTypeIntersection = entityList
       .map(entity => {
-        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
+        return pascalCase(`T_${entity}_Controllers`);
       })
-      .join(' | ');
+      .join(' & ');
 
     return `
       ${imports}
     
-      export type TControllers = ${entityTypeUnion}
+      export type TControllers = Partial<
+        ${entityTypeIntersection}
+      >;
     `;
   }
 
