@@ -33,6 +33,12 @@ export type TOptions<TControllers = Record<string, (info: Parameters<HttpRespons
    * default: 1
    */
   entityPathIndex?: number;
+  /**
+   * 실제 API 서버로 요청을 우선 시도하고, 404 에러인 경우에만 모킹 응답을 반환
+   * true인 경우 실제 서버 응답을 우선으로 사용하고, 404일 때만 mock 데이터 사용
+   * default: false
+   */
+  bypass?: boolean;
 };
 
 export type TOperation = {

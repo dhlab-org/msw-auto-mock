@@ -50,6 +50,7 @@ class HandlerGenerator implements GeneratorContract {
       isStatic: this.options?.static ?? false,
       maxArrayLength: this.options?.maxArrayLength ?? 20,
       controllers: this.options?.controllers ?? {},
+      bypass: this.options?.bypass ?? false,
     };
   }
 }

@@ -30,6 +30,11 @@ class HandlerTemplate implements TemplateContract {
       const baseURL = '${context.baseURL}';
       ${context.isStatic ? '' : `const MAX_ARRAY_LENGTH = ${context.maxArrayLength};`}
       
+      // MSW 옵션 설정
+      const options = {
+        bypass: ${context.bypass}
+      };
+      
       ${apiCounter}
 
       export const ${entity}Handlers = [
@@ -53,11 +58,18 @@ class HandlerTemplate implements TemplateContract {
   }
 
   #imports(context: TContext): string {
-    return [
-      `import { HttpResponse, http, type HttpResponseResolver } from 'msw';`,
+    const baseImports = [
       `import { faker } from '@faker-js/faker';`,
       `import { controllers } from '${context.controllerPath}';`,
-    ].join('\n');
+    ];
+
+    if (context.bypass) {
+      baseImports.unshift(`import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`);
+    } else {
+      baseImports.unshift(`import { HttpResponse, http, type HttpResponseResolver } from 'msw';`);
+    }
+
+    return baseImports.join('\n');
   }
 
   #apiCounter(): string {
@@ -86,6 +98,7 @@ class HandlerTemplate implements TemplateContract {
   #handler(op: TOperation): string {
     return `
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
+      ${this.#bypassLogic()}
       const resultArray = [${op.response.map(response => this.#responseObject(response))}];
       const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
     
@@ -96,6 +109,22 @@ class HandlerTemplate implements TemplateContract {
         }
       });
     }),\n`;
+  }
+
+  #bypassLogic(): string {
+    return `// 실제 서버 요청을 먼저 시도하고, 404 에러 시 mock 데이터로 fallback
+      if (options.bypass) {
+        try {
+          const originalResponse = await fetch(bypass(info.request));
+          if (originalResponse.status !== 404) {
+            return passthrough();
+          }
+        } catch (error) {
+          // 네트워크 오류 또는 서버 장애 시 mock 데이터 사용
+          console.warn('[MSW] Bypass 실패, mock 데이터 사용:', error);
+        }
+      }
+      `;
   }
 
   #responseObject(response: TResponse): string {
@@ -166,6 +195,7 @@ type TContext = {
   isStatic: boolean;
   maxArrayLength: number;
   controllers: Record<string, unknown>;
+  bypass: boolean;
 };
 
 type VMContext = {
