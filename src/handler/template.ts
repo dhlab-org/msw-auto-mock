@@ -138,14 +138,11 @@ class HandlerTemplate implements TemplateContract {
     const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
     const isStreamingResponse = responseType === 'text/event-stream';
 
-    let body: string;
-    if (!hasResponseBody) {
-      body = 'undefined';
-    } else if (isStreamingResponse) {
-      body = `createStreamingResponse(await ${identifier}(info))`;
-    } else {
-      body = identifier ? `await ${identifier}(info)` : 'undefined';
-    }
+    const body = (() => {
+      if (!hasResponseBody) return 'undefined';
+      if (isStreamingResponse) return `createStreamingResponse(await ${identifier}(info))`;
+      return identifier ? `await ${identifier}(info)` : 'undefined';
+    })();
 
     return `{
       status: ${status},
