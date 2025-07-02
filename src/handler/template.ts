@@ -54,7 +54,7 @@ class HandlerTemplate implements TemplateContract {
 
   #imports(context: TContext): string {
     return [
-      `import { HttpResponse, http, type HttpResponseResolver } from 'msw';`,
+      `import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`,
       `import { faker } from '@faker-js/faker';`,
       `import { controllers } from '${context.controllerPath}';`,
     ].join('\n');
@@ -86,6 +86,7 @@ class HandlerTemplate implements TemplateContract {
   #handler(op: TOperation): string {
     return `
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
+      ${this.#bypassLogic()}
       const resultArray = [${op.response.map(response => this.#responseObject(response))}];
       const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
     
@@ -96,6 +97,23 @@ class HandlerTemplate implements TemplateContract {
         }
       });
     }),\n`;
+  }
+
+  #bypassLogic(): string {
+    return `
+      const isBypass = info.request.headers.get('x-bypass') === 'true';
+
+      if (isBypass) {
+        try {
+          const originalResponse = await fetch(bypass(info.request));
+          if (originalResponse.status !== 404) {
+            return passthrough();
+          }
+        } catch (error) {
+          console.warn('[MSW] Bypass 실패, mock 데이터 사용:', error);
+        }
+      }
+      `;
   }
 
   #responseObject(response: TResponse): string {
