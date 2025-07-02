@@ -48,3 +48,10 @@ export type TResponse = {
   id: string;
   responses?: Record<string, OpenAPIV3.SchemaObject>;
 };
+
+// TODO: 다른 event 타입 지원을 위해 추후 TStreamingEvent을 제네릭으로 받도록 변경
+export type TStreamingEvent = {
+  event: 'message_start' | 'message_delta' | 'message_end';
+  data: string;
+  delay?: number;
+};

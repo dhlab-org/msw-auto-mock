@@ -11,7 +11,15 @@ class ControllerTypeTemplate implements TemplateContract {
   private readonly DTO_IMPORT_PATH = '@/shared/api/dto';
 
   ofEntity(operations: TOperation[], entity: string): string {
-    const imports = `import type { ${Array.from(this.#dtoTypes(operations)).join(', ')} } from '${this.DTO_IMPORT_PATH}';`;
+    const dtoTypes = this.#dtoTypes(operations);
+    const hasStreamingResponse = this.#hasStreamingResponse(operations);
+
+    const dtoImports =
+      dtoTypes.size > 0 ? `import type { ${Array.from(dtoTypes).join(', ')} } from '${this.DTO_IMPORT_PATH}';` : '';
+    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';` : '';
+
+    const imports = [dtoImports, streamingImport].filter(Boolean).join('\n');
+
     const entityType = this.#handlerMethodTypes(operations)
       .map(handler => {
         return `
@@ -37,16 +45,18 @@ class ControllerTypeTemplate implements TemplateContract {
       })
       .join('\n');
 
-    const entityTypeUnion = entityList
+    const entityTypeIntersection = entityList
       .map(entity => {
-        return `Partial<${pascalCase(`T_${entity}_Controllers`)}>`;
+        return pascalCase(`T_${entity}_Controllers`);
       })
-      .join(' | ');
+      .join(' & ');
 
     return `
       ${imports}
     
-      export type TControllers = ${entityTypeUnion}
+      export type TControllers = Partial<
+        ${entityTypeIntersection}
+      >;
     `;
   }
 
@@ -87,6 +97,12 @@ class ControllerTypeTemplate implements TemplateContract {
     }
 
     return types;
+  }
+
+  #hasStreamingResponse(operations: TOperation[]): boolean {
+    return operations.some(op =>
+      op.response.some(response => response.responses && Object.keys(response.responses).includes('text/event-stream')),
+    );
   }
 }
 

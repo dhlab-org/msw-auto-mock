@@ -13,6 +13,8 @@ class HandlerTemplate implements TemplateContract {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
     const imports = this.#imports(context);
     const apiCounter = this.#apiCounter();
+    const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
+    const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : '';
     const handlers = this.#handlers(entityOperations);
     const resultFunctions = this.#resultFunctions(entityOperations, context);
 
@@ -31,6 +33,7 @@ class HandlerTemplate implements TemplateContract {
       ${context.isStatic ? '' : `const MAX_ARRAY_LENGTH = ${context.maxArrayLength};`}
       
       ${apiCounter}
+      ${streamingUtils}
 
       export const ${entity}Handlers = [
         ${handlers}       
@@ -57,6 +60,7 @@ class HandlerTemplate implements TemplateContract {
       `import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`,
       `import { faker } from '@faker-js/faker';`,
       `import { controllers } from '${context.controllerPath}';`,
+      `import type { TStreamingEvent } from '@dataai/msw-auto-mock';`,
     ].join('\n');
   }
 
@@ -76,6 +80,35 @@ class HandlerTemplate implements TemplateContract {
     `;
   }
 
+  #hasStreamingResponse(entityOperations: TOperation[]): boolean {
+    return entityOperations.some(op =>
+      op.response.some(response => response.responses && Object.keys(response.responses).includes('text/event-stream')),
+    );
+  }
+
+  #streamingUtils(): string {
+    return `
+      // streaming response utility
+      function createStreamingResponse(messages: TStreamingEvent[]) {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            for (const chunk of messages) {
+              if (chunk.delay) {
+                await new Promise((resolve) => setTimeout(resolve, chunk.delay));
+              }
+              controller.enqueue(
+                encoder.encode(\`event: \${chunk.event}\\n\${chunk.data ? \`data: \${chunk.data}\\n\` : ''}\\n\`)
+              );
+            }
+            controller.close();
+          },
+        });
+        return stream;
+      }
+    `;
+  }
+
   #handlers(entityOperations: TOperation[]): string {
     return entityOperations
       .map(op => this.#handler(op))
@@ -92,9 +125,9 @@ class HandlerTemplate implements TemplateContract {
     
       return new HttpResponse(selectedResult.body, {
         status: selectedResult.status,
-        headers: {
+        headers: selectedResult.responseType ? {
           'Content-Type': selectedResult.responseType
-        }
+        } : undefined
       });
     }),\n`;
   }
@@ -121,12 +154,18 @@ class HandlerTemplate implements TemplateContract {
     const status = parseInt(response?.code!);
     const hasResponseBody = status !== 204 && status < 300; // 성공(2xx) 응답 중 204만 제외
     const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
-    const body = hasResponseBody ? `${identifier ? `await ${identifier}(info)` : 'undefined'}` : 'undefined';
+    const isStreamingResponse = responseType === 'text/event-stream';
+
+    const body = (() => {
+      if (!hasResponseBody) return 'undefined';
+      if (isStreamingResponse) return `createStreamingResponse(await ${identifier}(info))`;
+      return identifier ? `await ${identifier}(info)` : 'undefined';
+    })();
 
     return `{
       status: ${status},
       responseType: ${responseType ? `'${responseType}'` : undefined},
-      body: ${body === 'undefined' || responseType === 'text/event-stream' ? body : `JSON.stringify(${body})`}
+      body: ${body === 'undefined' || isStreamingResponse ? body : `JSON.stringify(${body})`}
     }`;
   }
 

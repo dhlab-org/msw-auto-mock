@@ -35,4 +35,5 @@ async function generateMocks(options: TOptions) {
   };
 }
 
-export { generateMocks, type TOptions };
+export { generateMocks };
+export type { TOptions, TStreamingEvent } from './types';
