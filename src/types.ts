@@ -1,7 +1,12 @@
-import { HttpResponseResolver } from 'msw';
-import { OpenAPIV3 } from 'openapi-types';
+import type { HttpResponseResolver } from "msw";
+import type { OpenAPIV3 } from "openapi-types";
 
-export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
+export type TOptions<
+  TControllers = Record<
+    string,
+    (info: Parameters<HttpResponseResolver>[0]) => Object | null
+  >,
+> = {
   input: string;
   outputDir?: string;
   maxArrayLength?: number;
@@ -16,7 +21,7 @@ export type TOptions<TControllers = Record<string, (info: Parameters<HttpRespons
    * - react: 브라우저 환경을 위한 mock 파일 생성
    * - react-native: React Native 환경을 위한 mock 파일 생성
    */
-  environment?: 'next' | 'react' | 'react-native';
+  environment?: "next" | "react" | "react-native";
 
   /**
    * 사용자 정의 응답 컨트롤러
@@ -38,8 +43,8 @@ export type TOptions<TControllers = Record<string, (info: Parameters<HttpRespons
 export type TOperation = {
   verb: string;
   path: string;
-  request: OpenAPIV3.OperationObject['requestBody'];
-  parameters: OpenAPIV3.OperationObject['parameters'];
+  request: OpenAPIV3.OperationObject["requestBody"];
+  parameters: OpenAPIV3.OperationObject["parameters"];
   response: TResponse[];
 };
 
@@ -51,7 +56,7 @@ export type TResponse = {
 
 // TODO: 다른 event 타입 지원을 위해 추후 TStreamingEvent을 제네릭으로 받도록 변경
 export type TStreamingEvent = {
-  event: 'message_start' | 'message_delta' | 'message_end';
+  event: "message_start" | "message_delta" | "message_end";
   data: string;
   delay?: number;
 };

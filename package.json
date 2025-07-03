@@ -14,7 +14,9 @@
   },
   "scripts": {
     "build": "tsup",
-    "fmt": "prettier {example,src}/**/*.{js,jsx,ts,tsx,css,md,html} --write",
+    "fmt": "biome format --write .",
+    "lint": "biome lint --write .",
+    "check": "biome check --write .",
     "test": "vitest run",
     "changeset": "changeset",
     "release": "changeset publish"
@@ -31,6 +33,7 @@
     "ts-pattern": "5.2.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.8.0",
     "@changesets/cli": "2.27.7",
     "@types/lodash": "4.17.6",
     "@types/node": "20.14.9",
@@ -54,15 +57,8 @@
     "url": "https://github.com/zoubingwu/msw-auto-mock/issues"
   },
   "homepage": "https://github.com/zoubingwu/msw-auto-mock",
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "msw",
-    "mock",
-    "service-worker",
-    "openapi"
-  ],
+  "files": ["dist"],
+  "keywords": ["msw", "mock", "service-worker", "openapi"],
   "publishConfig": {
     "access": "public"
   },

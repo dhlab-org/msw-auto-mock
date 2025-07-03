@@ -1,20 +1,28 @@
-import { faker } from '@faker-js/faker';
-import { camelCase } from 'es-toolkit';
-import vm from 'node:vm';
-import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
-import { TOperation, TResponse } from '../types';
+import vm from "node:vm";
+import { faker } from "@faker-js/faker";
+import { camelCase } from "es-toolkit";
+import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from "../faker";
+import type { TOperation, TResponse } from "../types";
 
 type TemplateContract = {
-  ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string;
+  ofEntity(
+    entityOperations: TOperation[],
+    entity: string,
+    context: TContext,
+  ): string;
   ofAllCombined(entities: string[]): string;
 };
 
 class HandlerTemplate implements TemplateContract {
-  ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
+  ofEntity(
+    entityOperations: TOperation[],
+    entity: string,
+    context: TContext,
+  ): string {
     const imports = this.#imports(context);
     const apiCounter = this.#apiCounter();
     const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
-    const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : '';
+    const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : "";
     const handlers = this.#handlers(entityOperations);
     const resultFunctions = this.#resultFunctions(entityOperations, context);
 
@@ -30,7 +38,7 @@ class HandlerTemplate implements TemplateContract {
       faker.seed(1);
       
       const baseURL = '${context.baseURL}';
-      ${context.isStatic ? '' : `const MAX_ARRAY_LENGTH = ${context.maxArrayLength};`}
+      ${context.isStatic ? "" : `const MAX_ARRAY_LENGTH = ${context.maxArrayLength};`}
       
       ${apiCounter}
       ${streamingUtils}
@@ -45,14 +53,16 @@ class HandlerTemplate implements TemplateContract {
 
   ofAllCombined(entities: string[]): string {
     const handlersImport = entities
-      .map(entity => `import { ${entity}Handlers } from './${entity}.handlers';`)
-      .join('\n');
+      .map(
+        (entity) => `import { ${entity}Handlers } from './${entity}.handlers';`,
+      )
+      .join("\n");
 
     const combineHandlers = `export const handlers = [
-      ${entities.map(entity => `...${entity}Handlers,`).join('\n')}
+      ${entities.map((entity) => `...${entity}Handlers,`).join("\n")}
     ]`;
 
-    return [handlersImport, combineHandlers].join('\n\n');
+    return [handlersImport, combineHandlers].join("\n\n");
   }
 
   #imports(context: TContext): string {
@@ -61,7 +71,7 @@ class HandlerTemplate implements TemplateContract {
       `import { faker } from '@faker-js/faker';`,
       `import { controllers } from '${context.controllerPath}';`,
       `import type { TStreamingEvent } from '@dataai/msw-auto-mock';`,
-    ].join('\n');
+    ].join("\n");
   }
 
   #apiCounter(): string {
@@ -81,8 +91,12 @@ class HandlerTemplate implements TemplateContract {
   }
 
   #hasStreamingResponse(entityOperations: TOperation[]): boolean {
-    return entityOperations.some(op =>
-      op.response.some(response => response.responses && Object.keys(response.responses).includes('text/event-stream')),
+    return entityOperations.some((op) =>
+      op.response.some(
+        (response) =>
+          response.responses &&
+          Object.keys(response.responses).includes("text/event-stream"),
+      ),
     );
   }
 
@@ -111,8 +125,8 @@ class HandlerTemplate implements TemplateContract {
 
   #handlers(entityOperations: TOperation[]): string {
     return entityOperations
-      .map(op => this.#handler(op))
-      .join('\n')
+      .map((op) => this.#handler(op))
+      .join("\n")
       .trimEnd();
   }
 
@@ -120,7 +134,7 @@ class HandlerTemplate implements TemplateContract {
     return `
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
       ${this.#bypassLogic()}
-      const resultArray = [${op.response.map(response => this.#responseObject(response))}];
+      const resultArray = [${op.response.map((response) => this.#responseObject(response))}];
       const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
     
       return new HttpResponse(selectedResult.body, {
@@ -150,22 +164,28 @@ class HandlerTemplate implements TemplateContract {
   }
 
   #responseObject(response: TResponse): string {
-    const identifier = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : '';
-    const status = parseInt(response?.code!);
+    const identifier = response.id
+      ? camelCase(`get_${response.id}_${response.code}_response`)
+      : "";
+    const status = Number.parseInt(response.code);
     const hasResponseBody = status !== 204 && status < 300; // 성공(2xx) 응답 중 204만 제외
-    const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
-    const isStreamingResponse = responseType === 'text/event-stream';
+    const responseType =
+      hasResponseBody && response.responses
+        ? Object.keys(response.responses)[0]
+        : undefined;
+    const isStreamingResponse = responseType === "text/event-stream";
 
     const body = (() => {
-      if (!hasResponseBody) return 'undefined';
-      if (isStreamingResponse) return `createStreamingResponse(await ${identifier}(info))`;
-      return identifier ? `await ${identifier}(info)` : 'undefined';
+      if (!hasResponseBody) return "undefined";
+      if (isStreamingResponse)
+        return `createStreamingResponse(await ${identifier}(info))`;
+      return identifier ? `await ${identifier}(info)` : "undefined";
     })();
 
     return `{
       status: ${status},
       responseType: ${responseType ? `'${responseType}'` : undefined},
-      body: ${body === 'undefined' || isStreamingResponse ? body : `JSON.stringify(${body})`}
+      body: ${body === "undefined" || isStreamingResponse ? body : `JSON.stringify(${body})`}
     }`;
   }
 
@@ -180,13 +200,23 @@ class HandlerTemplate implements TemplateContract {
     vm.createContext(vmContext);
 
     return entityOperations
-      .map(op => op.response.map(r => this.#resultFunction(r, context, vmContext)).join('\n'))
-      .join('\n');
+      .map((op) =>
+        op.response
+          .map((r) => this.#resultFunction(r, context, vmContext))
+          .join("\n"),
+      )
+      .join("\n");
   }
 
-  #resultFunction(response: TResponse, context: TContext, vmContext: VMContext): string {
-    const name = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : '';
-    if (!response.responses) return '';
+  #resultFunction(
+    response: TResponse,
+    context: TContext,
+    vmContext: VMContext,
+  ): string {
+    const name = response.id
+      ? camelCase(`get_${response.id}_${response.code}_response`)
+      : "";
+    if (!response.responses) return "";
 
     const isCustomResponse = Object.keys(context.controllers).includes(name);
     if (isCustomResponse) {
@@ -197,15 +227,21 @@ class HandlerTemplate implements TemplateContract {
       `;
     }
 
-    const jsonResponseKey = Object.keys(response.responses).find(r => r.startsWith('application/json'));
-    if (!jsonResponseKey) return '';
+    const jsonResponseKey = Object.keys(response.responses).find((r) =>
+      r.startsWith("application/json"),
+    );
+    if (!jsonResponseKey) return "";
 
-    const fakerResult = transformJSONSchemaToFakerCode(response.responses[jsonResponseKey]);
+    const fakerResult = transformJSONSchemaToFakerCode(
+      response.responses[jsonResponseKey],
+    );
     if (context.isStatic) {
       vm.runInContext(`result = ${fakerResult};`, vmContext);
     }
 
-    const data = context.isStatic ? JSON.stringify(vmContext.result) : fakerResult;
+    const data = context.isStatic
+      ? JSON.stringify(vmContext.result)
+      : fakerResult;
 
     return `
       export function ${name}() {
@@ -215,7 +251,11 @@ class HandlerTemplate implements TemplateContract {
   }
 }
 
-export { HandlerTemplate, type TemplateContract as HandlerTemplateContract, type TContext };
+export {
+  HandlerTemplate,
+  type TemplateContract as HandlerTemplateContract,
+  type TContext,
+};
 
 type TContext = {
   baseURL: string;
