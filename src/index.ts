@@ -1,10 +1,10 @@
-import path from 'path';
+import path from 'node:path';
+import { ApiEndpoint } from './apiEndpoint';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
-import { TypeDefinitionGenerator } from './type-definition/generator';
-import { ApiEndpoint } from './apiEndpoint';
 import { Swagger } from './swagger';
-import { TOptions } from './types';
+import { TypeDefinitionGenerator } from './type-definition/generator';
+import type { TOptions } from './types';
 
 /**
  * 프로그래밍 방식으로 MSW 핸들러를 생성합니다.

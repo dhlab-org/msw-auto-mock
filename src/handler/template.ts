@@ -1,8 +1,8 @@
+import vm from 'node:vm';
 import { faker } from '@faker-js/faker';
 import { camelCase } from 'es-toolkit';
-import vm from 'node:vm';
 import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
-import { TOperation, TResponse } from '../types';
+import type { TOperation, TResponse } from '../types';
 
 type TemplateContract = {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string;
@@ -151,7 +151,7 @@ class HandlerTemplate implements TemplateContract {
 
   #responseObject(response: TResponse): string {
     const identifier = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : '';
-    const status = parseInt(response?.code!);
+    const status = Number.parseInt(response.code);
     const hasResponseBody = status !== 204 && status < 300; // 성공(2xx) 응답 중 204만 제외
     const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
     const isStreamingResponse = responseType === 'text/event-stream';

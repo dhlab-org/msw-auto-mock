@@ -1,5 +1,5 @@
 import { pascalCase } from 'es-toolkit';
-import { TOperation } from '../types';
+import type { TOperation } from '../types';
 import { ControllerTypeAdapter } from './adapter';
 
 type TemplateContract = {

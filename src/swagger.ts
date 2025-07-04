@@ -2,7 +2,7 @@ import SwaggerParser from '@apidevtools/swagger-parser';
 import type { OpenAPIV3 } from 'openapi-types';
 // @ts-ignore lack of d.ts file
 import converter from 'swagger2openapi';
-import { TOptions } from './types';
+import type { TOptions } from './types';
 
 type SwaggerContract = {
   apiDoc: OpenAPIV3.Document;

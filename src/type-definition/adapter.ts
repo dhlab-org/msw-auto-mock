@@ -1,6 +1,6 @@
 import { camelCase } from 'es-toolkit';
-import { match, P } from 'ts-pattern';
-import { TOperation, TResponse } from '../types';
+import { P, match } from 'ts-pattern';
+import type { TOperation, TResponse } from '../types';
 
 type AdapterContract = {
   pathParamsType: string;
@@ -16,7 +16,12 @@ class ControllerTypeAdapter implements AdapterContract {
   get pathParamsType(): string {
     const pathParamsTypeContents = match(this.operation.parameters)
       .with(
-        P.array({ in: P.string, schema: { type: P.union('integer', 'string', 'boolean', 'object', 'number') } }),
+        P.array({
+          in: P.string,
+          schema: {
+            type: P.union('integer', 'string', 'boolean', 'object', 'number'),
+          },
+        }),
         p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
       )
       // @TODO 추후 다른 타입도 지원해야 함
@@ -30,8 +35,8 @@ class ControllerTypeAdapter implements AdapterContract {
   get requestDtoTypeName(): string | null {
     return match(this.operation.request)
       .with(
-        { content: { ['application/json']: { schema: { $ref: P.string } } } },
-        r => `${r.content['application/json'].schema['$ref'].split('/').at(-1)}Dto`,
+        { content: { 'application/json': { schema: { $ref: P.string } } } },
+        r => `${r.content['application/json'].schema.$ref.split('/').at(-1)}Dto`,
       )
       .otherwise(() => null);
   }

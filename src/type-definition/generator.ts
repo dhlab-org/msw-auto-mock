@@ -1,6 +1,6 @@
+import path from 'node:path';
 import { compact } from 'es-toolkit';
-import path from 'path';
-import { type ApiEndpointContract } from '../apiEndpoint';
+import type { ApiEndpointContract } from '../apiEndpoint';
 import { writeFile } from '../utils';
 import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 

@@ -1,5 +1,5 @@
 import merge from 'lodash/merge';
-import { OpenAPIV3 } from 'openapi-types';
+import type { OpenAPIV3 } from 'openapi-types';
 import { isValidRegExp } from './utils';
 
 export const MAX_STRING_LENGTH = 42;
@@ -44,14 +44,18 @@ export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObje
     case 'string':
       return transformStringBasedOnFormat(jsonSchema, key);
     case 'number':
-    case 'integer':
-      const params = JSON.stringify({ min: jsonSchema.minimum, max: jsonSchema.maximum });
+    case 'integer': {
+      const params = JSON.stringify({
+        min: jsonSchema.minimum,
+        max: jsonSchema.maximum,
+      });
       if (jsonSchema.minimum || jsonSchema.maxItems) {
         return `faker.number.int(${params})`;
       }
-      return `faker.number.int()`;
+      return 'faker.number.int()';
+    }
     case 'boolean':
-      return `faker.datatype.boolean()`;
+      return 'faker.datatype.boolean()';
     case 'object':
       if (!jsonSchema.properties && typeof jsonSchema.additionalProperties === 'object') {
         return `[...new Array(5).keys()].map(_ => ({ [faker.lorem.word()]: ${transformJSONSchemaToFakerCode(
@@ -81,46 +85,61 @@ export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObje
 function transformStringBasedOnFormat(schema: OpenAPIV3.NonArraySchemaObject, key?: string) {
   const { format, minLength, maxLength, pattern } = schema;
   if (format === 'date-time' || key?.toLowerCase().endsWith('_at')) {
-    return `faker.date.past()`;
-  } else if (format === 'time') {
-    return `new Date().toISOString().substring(11, 16)`;
-  } else if (format === 'date') {
-    return `faker.date.past().toISOString().substring(0,10)`;
-  } else if (format === 'uuid' || key?.toLowerCase() === 'id' || key?.toLowerCase().endsWith('id')) {
-    return `faker.string.uuid()`;
-  } else if (['idn-email', 'email'].includes(format ?? '') || key?.toLowerCase().includes('email')) {
-    return `faker.internet.email()`;
-  } else if (['hostname', 'idn-hostname'].includes(format ?? '')) {
-    return `faker.internet.domainName()`;
-  } else if (format === 'ipv4') {
-    return `faker.internet.ip()`;
-  } else if (format === 'ipv6') {
-    return `faker.internet.ipv6()`;
-  } else if (
+    return 'faker.date.past()';
+  }
+  if (format === 'time') {
+    return 'new Date().toISOString().substring(11, 16)';
+  }
+  if (format === 'date') {
+    return 'faker.date.past().toISOString().substring(0,10)';
+  }
+  if (format === 'uuid' || key?.toLowerCase() === 'id' || key?.toLowerCase().endsWith('id')) {
+    return 'faker.string.uuid()';
+  }
+  if (['idn-email', 'email'].includes(format ?? '') || key?.toLowerCase().includes('email')) {
+    return 'faker.internet.email()';
+  }
+  if (['hostname', 'idn-hostname'].includes(format ?? '')) {
+    return 'faker.internet.domainName()';
+  }
+  if (format === 'ipv4') {
+    return 'faker.internet.ip()';
+  }
+  if (format === 'ipv6') {
+    return 'faker.internet.ipv6()';
+  }
+  if (
     ['uri', 'uri-reference', 'iri', 'iri-reference', 'uri-template'].includes(format ?? '') ||
     key?.toLowerCase().includes('url')
   ) {
     if (['photo', 'image', 'picture'].some(image => key?.toLowerCase().includes(image))) {
-      return `faker.image.url()`;
+      return 'faker.image.url()';
     }
-    return `faker.internet.url()`;
-  } else if (key?.toLowerCase().endsWith('name')) {
-    return `faker.person.fullName()`;
-  } else if (key?.toLowerCase().includes('street')) {
-    return `faker.location.streetAddress()`;
-  } else if (key?.toLowerCase().includes('city')) {
-    return `faker.location.city()`;
-  } else if (key?.toLowerCase().includes('state')) {
-    return `faker.location.state()`;
-  } else if (key?.toLowerCase().includes('zip')) {
-    return `faker.location.zipCode()`;
+    return 'faker.internet.url()';
+  }
+  if (key?.toLowerCase().endsWith('name')) {
+    return 'faker.person.fullName()';
+  }
+  if (key?.toLowerCase().includes('street')) {
+    return 'faker.location.streetAddress()';
+  }
+  if (key?.toLowerCase().includes('city')) {
+    return 'faker.location.city()';
+  }
+  if (key?.toLowerCase().includes('state')) {
+    return 'faker.location.state()';
+  }
+  if (key?.toLowerCase().includes('zip')) {
+    return 'faker.location.zipCode()';
   }
 
   if (minLength && maxLength) {
     return `faker.string.alpha({ length: { min: ${minLength}, max: ${maxLength} }})`;
-  } else if (minLength) {
+  }
+  if (minLength) {
     return `faker.string.alpha({ length: { min: ${minLength}, max: MAX_STRING_LENGTH }})`;
-  } else if (maxLength) {
+  }
+  if (maxLength) {
     return `faker.string.alpha({ length: { min: 0, max: ${maxLength} }})`;
   }
 
@@ -128,5 +147,5 @@ function transformStringBasedOnFormat(schema: OpenAPIV3.NonArraySchemaObject, ke
     return `faker.helpers.fromRegExp(${pattern})`;
   }
 
-  return `faker.lorem.words()`;
+  return 'faker.lorem.words()';
 }

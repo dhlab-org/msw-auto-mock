@@ -1,7 +1,7 @@
-import path from 'path';
-import { type ApiEndpointContract } from '../apiEndpoint';
-import { type SwaggerContract } from '../swagger';
-import { TOptions } from '../types';
+import path from 'node:path';
+import type { ApiEndpointContract } from '../apiEndpoint';
+import type { SwaggerContract } from '../swagger';
+import type { TOptions } from '../types';
 import { writeFile } from '../utils';
 import { HandlerTemplate, type HandlerTemplateContract, type TContext as TTemplateContext } from './template';
 

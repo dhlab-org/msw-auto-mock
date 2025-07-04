@@ -1,7 +1,7 @@
-import { HttpResponseResolver } from 'msw';
-import { OpenAPIV3 } from 'openapi-types';
+import type { HttpResponseResolver } from 'msw';
+import type { OpenAPIV3 } from 'openapi-types';
 
-export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => Object | null>> = {
+export type TOptions<TControllers = Record<string, (info: Parameters<HttpResponseResolver>[0]) => object | null>> = {
   input: string;
   outputDir?: string;
   maxArrayLength?: number;

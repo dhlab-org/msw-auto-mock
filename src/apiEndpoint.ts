@@ -1,8 +1,8 @@
 import { camelCase, groupBy } from 'es-toolkit';
 import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
-import { type SwaggerContract } from './swagger';
-import { type TOperation, type TOptions } from './types';
+import type { SwaggerContract } from './swagger';
+import type { TOperation, TOptions } from './types';
 import { toExpressLikePath } from './utils';
 
 type ApiEndpointContract = {
@@ -47,7 +47,7 @@ class ApiEndpoint implements ApiEndpointContract {
         : Object.entries(pathItem)
             .filter((arg): arg is [string, OpenAPIV3.OperationObject] => operationKeys.includes(arg[0] as any))
             .map(([verb, operation]) => {
-              const id = camelCase(operation.operationId ?? verb + '/' + path);
+              const id = camelCase(operation.operationId ?? `${verb}/${path}`);
               return {
                 path,
                 verb,
