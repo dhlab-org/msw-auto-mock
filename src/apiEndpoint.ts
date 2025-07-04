@@ -1,9 +1,9 @@
-import { camelCase, groupBy } from "es-toolkit";
-import ApiGenerator, { isReference } from "oazapfts/generate";
-import { OpenAPIV3 } from "openapi-types";
-import type { SwaggerContract } from "./swagger";
-import type { TOperation, TOptions } from "./types";
-import { toExpressLikePath } from "./utils";
+import { camelCase, groupBy } from 'es-toolkit';
+import ApiGenerator, { isReference } from 'oazapfts/generate';
+import { OpenAPIV3 } from 'openapi-types';
+import type { SwaggerContract } from './swagger';
+import type { TOperation, TOptions } from './types';
+import { toExpressLikePath } from './utils';
 
 type ApiEndpointContract = {
   collection: TOperation[];
@@ -32,7 +32,7 @@ class ApiEndpoint implements ApiEndpointContract {
 
   get byEntity() {
     const operations = this.collection;
-    return groupBy(operations, (op) => op.path.split("/")[this.options.entityPathIndex ?? 1]);
+    return groupBy(operations, (op) => op.path.split('/')[this.options.entityPathIndex ?? 1]);
   }
 
   get entities() {
@@ -67,8 +67,8 @@ class ApiEndpoint implements ApiEndpointContract {
       return true;
     }
 
-    const allowedPaths = includes?.split(",") ?? [];
-    const excludedPaths = excludes?.split(",") ?? [];
+    const allowedPaths = includes?.split(',') ?? [];
+    const excludedPaths = excludes?.split(',') ?? [];
 
     if (allowedPaths.length > 0 && !allowedPaths.includes(operation.path)) {
       return false;
@@ -89,7 +89,7 @@ class ApiEndpoint implements ApiEndpointContract {
 
   #filteredResponsesByCodes(responses: OpenAPIV3.ResponsesObject) {
     const rawCodes = this.options?.codes;
-    const codes = rawCodes ? (rawCodes.indexOf(",") !== -1 ? rawCodes?.split(",") : [rawCodes]) : null;
+    const codes = rawCodes ? (rawCodes.indexOf(',') !== -1 ? rawCodes?.split(',') : [rawCodes]) : null;
 
     return Object.entries(responses).filter(([code]) => {
       if (codes && !codes.includes(code)) {
@@ -119,7 +119,7 @@ class ApiEndpoint implements ApiEndpointContract {
       const resolvedResponse = Object.keys(content).reduce(
         (resolved, type) => {
           const schema = content[type].schema;
-          if (typeof schema !== "undefined") {
+          if (typeof schema !== 'undefined') {
             resolved[type] = recursiveResolveSchema(schema, this.apiGenerator);
           }
 
@@ -152,8 +152,8 @@ type TEntity = string;
 type TOperationDefinition = {
   verb: string;
   path: string;
-  requests: OpenAPIV3.OperationObject["requestBody"];
-  parameters: OpenAPIV3.OperationObject["parameters"];
+  requests: OpenAPIV3.OperationObject['requestBody'];
+  parameters: OpenAPIV3.OperationObject['parameters'];
   id: string;
   responses: OpenAPIV3.ResponsesObject;
 };
@@ -170,7 +170,7 @@ function autoPopRefs<T>(cb: () => T) {
 function resolve(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, apiGen: ApiGenerator) {
   if (isReference(schema)) {
     if (resolvingRefs.includes(schema.$ref)) {
-      console.warn(`circular reference for path ${[...resolvingRefs, schema.$ref].join(" -> ")} found`);
+      console.warn(`circular reference for path ${[...resolvingRefs, schema.$ref].join(' -> ')} found`);
       return {};
     }
     resolvingRefs.push(schema.$ref);
@@ -182,11 +182,11 @@ function recursiveResolveSchema(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.Sc
   return autoPopRefs(() => {
     const resolvedSchema = resolve(schema, apiGen) as OpenAPIV3.SchemaObject;
 
-    if (resolvedSchema.type === "array") {
+    if (resolvedSchema.type === 'array') {
       resolvedSchema.items = resolve(resolvedSchema.items, apiGen);
       resolvedSchema.items = recursiveResolveSchema(resolvedSchema.items, apiGen);
-    } else if (resolvedSchema.type === "object") {
-      if (!resolvedSchema.properties && typeof resolvedSchema.additionalProperties === "object") {
+    } else if (resolvedSchema.type === 'object') {
+      if (!resolvedSchema.properties && typeof resolvedSchema.additionalProperties === 'object') {
         if (isReference(resolvedSchema.additionalProperties)) {
           resolvedSchema.additionalProperties = recursiveResolveSchema(
             resolve(resolvedSchema.additionalProperties, apiGen),

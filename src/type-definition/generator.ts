@@ -1,8 +1,8 @@
-import path from "node:path";
-import { compact } from "es-toolkit";
-import type { ApiEndpointContract } from "../apiEndpoint";
-import { writeFile } from "../utils";
-import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from "./template";
+import path from 'node:path';
+import { compact } from 'es-toolkit';
+import type { ApiEndpointContract } from '../apiEndpoint';
+import { writeFile } from '../utils';
+import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 
 type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
@@ -11,7 +11,7 @@ type GeneratorContract = {
 class TypeDefinitionGenerator implements GeneratorContract {
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly template: ControllerTypeTemplateContract;
-  private readonly OUTPUT_DIR = "__types__";
+  private readonly OUTPUT_DIR = '__types__';
 
   constructor(apiEndpoint: ApiEndpointContract) {
     this.apiEndpoint = apiEndpoint;
@@ -41,7 +41,7 @@ class TypeDefinitionGenerator implements GeneratorContract {
   }
 
   async #generateCombinedTypeFile(targetFolder: string): Promise<void> {
-    const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), "index.ts");
+    const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), 'index.ts');
     const template = this.template.ofAllCombined(this.apiEndpoint.entities);
     await writeFile(filePath, template);
   }

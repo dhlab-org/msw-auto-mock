@@ -1,6 +1,6 @@
-import { pascalCase } from "es-toolkit";
-import type { TOperation } from "../types";
-import { ControllerTypeAdapter } from "./adapter";
+import { pascalCase } from 'es-toolkit';
+import type { TOperation } from '../types';
+import { ControllerTypeAdapter } from './adapter';
 
 type TemplateContract = {
   ofEntity(operations: TOperation[], entity: string): string;
@@ -8,17 +8,17 @@ type TemplateContract = {
 };
 
 class ControllerTypeTemplate implements TemplateContract {
-  private readonly DTO_IMPORT_PATH = "@/shared/api/dto";
+  private readonly DTO_IMPORT_PATH = '@/shared/api/dto';
 
   ofEntity(operations: TOperation[], entity: string): string {
     const dtoTypes = this.#dtoTypes(operations);
     const hasStreamingResponse = this.#hasStreamingResponse(operations);
 
     const dtoImports =
-      dtoTypes.size > 0 ? `import type { ${Array.from(dtoTypes).join(", ")} } from '${this.DTO_IMPORT_PATH}';` : "";
-    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';` : "";
+      dtoTypes.size > 0 ? `import type { ${Array.from(dtoTypes).join(', ')} } from '${this.DTO_IMPORT_PATH}';` : '';
+    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';` : '';
 
-    const imports = [dtoImports, streamingImport].filter(Boolean).join("\n");
+    const imports = [dtoImports, streamingImport].filter(Boolean).join('\n');
 
     const entityType = this.#handlerMethodTypes(operations)
       .map((handler) => {
@@ -26,7 +26,7 @@ class ControllerTypeTemplate implements TemplateContract {
         ${handler.identifierName}: (info: Parameters<HttpResponseResolver<${handler.pathParams}, ${handler.requestBodyType}>>[0])=> ${handler.responseBodyType} | Promise<${handler.responseBodyType}>;
       `;
       })
-      .join("\n");
+      .join('\n');
 
     return `
       import type { HttpResponseResolver } from "msw";
@@ -43,13 +43,13 @@ class ControllerTypeTemplate implements TemplateContract {
       .map((entity) => {
         return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
       })
-      .join("\n");
+      .join('\n');
 
     const entityTypeIntersection = entityList
       .map((entity) => {
         return pascalCase(`T_${entity}_Controllers`);
       })
-      .join(" & ");
+      .join(' & ');
 
     return `
       ${imports}
@@ -90,7 +90,7 @@ class ControllerTypeTemplate implements TemplateContract {
         types.push({
           identifierName: adapter.handlerIdentifierName(response),
           pathParams: adapter.pathParamsType,
-          requestBodyType: adapter.requestDtoTypeName ?? "null",
+          requestBodyType: adapter.requestDtoTypeName ?? 'null',
           responseBodyType: adapter.responseBodyType(response.responses),
         });
       }
@@ -102,7 +102,7 @@ class ControllerTypeTemplate implements TemplateContract {
   #hasStreamingResponse(operations: TOperation[]): boolean {
     return operations.some((op) =>
       op.response.some(
-        (response) => response.responses && Object.keys(response.responses).includes("text/event-stream"),
+        (response) => response.responses && Object.keys(response.responses).includes('text/event-stream'),
       ),
     );
   }

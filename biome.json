@@ -38,6 +38,7 @@
   },
   "javascript": {
     "formatter": {
+      "quoteStyle": "single",
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "semicolons": "always",

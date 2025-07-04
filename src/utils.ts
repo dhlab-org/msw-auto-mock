@@ -1,7 +1,7 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { camelCase } from "es-toolkit";
-import prettier from "prettier";
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { camelCase } from 'es-toolkit';
+import prettier from 'prettier';
 
 async function prettify(content: string): Promise<string> {
   const config = await prettier.resolveConfig(process.cwd(), {
@@ -11,7 +11,7 @@ async function prettify(content: string): Promise<string> {
 
   try {
     return prettier.format(content, {
-      parser: "typescript",
+      parser: 'typescript',
       ...config,
       plugins: [],
     });
