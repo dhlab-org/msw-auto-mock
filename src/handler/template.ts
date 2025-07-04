@@ -5,20 +5,12 @@ import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from "../faker";
 import type { TOperation, TResponse } from "../types";
 
 type TemplateContract = {
-  ofEntity(
-    entityOperations: TOperation[],
-    entity: string,
-    context: TContext,
-  ): string;
+  ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string;
   ofAllCombined(entities: string[]): string;
 };
 
 class HandlerTemplate implements TemplateContract {
-  ofEntity(
-    entityOperations: TOperation[],
-    entity: string,
-    context: TContext,
-  ): string {
+  ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
     const imports = this.#imports(context);
     const apiCounter = this.#apiCounter();
     const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
@@ -53,9 +45,7 @@ class HandlerTemplate implements TemplateContract {
 
   ofAllCombined(entities: string[]): string {
     const handlersImport = entities
-      .map(
-        (entity) => `import { ${entity}Handlers } from './${entity}.handlers';`,
-      )
+      .map((entity) => `import { ${entity}Handlers } from './${entity}.handlers';`)
       .join("\n");
 
     const combineHandlers = `export const handlers = [
@@ -93,9 +83,7 @@ class HandlerTemplate implements TemplateContract {
   #hasStreamingResponse(entityOperations: TOperation[]): boolean {
     return entityOperations.some((op) =>
       op.response.some(
-        (response) =>
-          response.responses &&
-          Object.keys(response.responses).includes("text/event-stream"),
+        (response) => response.responses && Object.keys(response.responses).includes("text/event-stream"),
       ),
     );
   }
@@ -164,21 +152,15 @@ class HandlerTemplate implements TemplateContract {
   }
 
   #responseObject(response: TResponse): string {
-    const identifier = response.id
-      ? camelCase(`get_${response.id}_${response.code}_response`)
-      : "";
+    const identifier = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : "";
     const status = Number.parseInt(response.code);
     const hasResponseBody = status !== 204 && status < 300; // 성공(2xx) 응답 중 204만 제외
-    const responseType =
-      hasResponseBody && response.responses
-        ? Object.keys(response.responses)[0]
-        : undefined;
+    const responseType = hasResponseBody && response.responses ? Object.keys(response.responses)[0] : undefined;
     const isStreamingResponse = responseType === "text/event-stream";
 
     const body = (() => {
       if (!hasResponseBody) return "undefined";
-      if (isStreamingResponse)
-        return `createStreamingResponse(await ${identifier}(info))`;
+      if (isStreamingResponse) return `createStreamingResponse(await ${identifier}(info))`;
       return identifier ? `await ${identifier}(info)` : "undefined";
     })();
 
@@ -200,22 +182,12 @@ class HandlerTemplate implements TemplateContract {
     vm.createContext(vmContext);
 
     return entityOperations
-      .map((op) =>
-        op.response
-          .map((r) => this.#resultFunction(r, context, vmContext))
-          .join("\n"),
-      )
+      .map((op) => op.response.map((r) => this.#resultFunction(r, context, vmContext)).join("\n"))
       .join("\n");
   }
 
-  #resultFunction(
-    response: TResponse,
-    context: TContext,
-    vmContext: VMContext,
-  ): string {
-    const name = response.id
-      ? camelCase(`get_${response.id}_${response.code}_response`)
-      : "";
+  #resultFunction(response: TResponse, context: TContext, vmContext: VMContext): string {
+    const name = response.id ? camelCase(`get_${response.id}_${response.code}_response`) : "";
     if (!response.responses) return "";
 
     const isCustomResponse = Object.keys(context.controllers).includes(name);
@@ -227,21 +199,15 @@ class HandlerTemplate implements TemplateContract {
       `;
     }
 
-    const jsonResponseKey = Object.keys(response.responses).find((r) =>
-      r.startsWith("application/json"),
-    );
+    const jsonResponseKey = Object.keys(response.responses).find((r) => r.startsWith("application/json"));
     if (!jsonResponseKey) return "";
 
-    const fakerResult = transformJSONSchemaToFakerCode(
-      response.responses[jsonResponseKey],
-    );
+    const fakerResult = transformJSONSchemaToFakerCode(response.responses[jsonResponseKey]);
     if (context.isStatic) {
       vm.runInContext(`result = ${fakerResult};`, vmContext);
     }
 
-    const data = context.isStatic
-      ? JSON.stringify(vmContext.result)
-      : fakerResult;
+    const data = context.isStatic ? JSON.stringify(vmContext.result) : fakerResult;
 
     return `
       export function ${name}() {
@@ -251,11 +217,7 @@ class HandlerTemplate implements TemplateContract {
   }
 }
 
-export {
-  HandlerTemplate,
-  type TemplateContract as HandlerTemplateContract,
-  type TContext,
-};
+export { HandlerTemplate, type TemplateContract as HandlerTemplateContract, type TContext };
 
 type TContext = {
   baseURL: string;

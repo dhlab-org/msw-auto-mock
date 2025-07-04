@@ -14,10 +14,7 @@ class MSWServerGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    const config: Record<
-      NonNullable<TOptions["environment"]> | "default",
-      TServerType[]
-    > = {
+    const config: Record<NonNullable<TOptions["environment"]> | "default", TServerType[]> = {
       next: ["node", "browser"],
       react: ["browser"],
       "react-native": ["native"],
@@ -25,20 +22,12 @@ class MSWServerGenerator implements GeneratorContract {
     };
 
     const environments = config[this.environment ?? "default"];
-    await Promise.all(
-      environments.map((env) => this.#generateServer(targetFolder, env)),
-    );
+    await Promise.all(environments.map((env) => this.#generateServer(targetFolder, env)));
   }
 
-  async #generateServer(
-    targetFolder: string,
-    type: TServerType,
-  ): Promise<void> {
+  async #generateServer(targetFolder: string, type: TServerType): Promise<void> {
     const template = this.#templateOf(type);
-    await writeFile(
-      path.resolve(process.cwd(), targetFolder, `${type}.ts`),
-      template,
-    );
+    await writeFile(path.resolve(process.cwd(), targetFolder, `${type}.ts`), template);
   }
 
   #templateOf(type: TServerType): string {

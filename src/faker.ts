@@ -4,10 +4,7 @@ import { isValidRegExp } from "./utils";
 
 export const MAX_STRING_LENGTH = 42;
 
-export function transformJSONSchemaToFakerCode(
-  jsonSchema?: OpenAPIV3.SchemaObject,
-  key?: string,
-): string {
+export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObject, key?: string): string {
   if (!jsonSchema) {
     return "null";
   }
@@ -60,10 +57,7 @@ export function transformJSONSchemaToFakerCode(
     case "boolean":
       return "faker.datatype.boolean()";
     case "object":
-      if (
-        !jsonSchema.properties &&
-        typeof jsonSchema.additionalProperties === "object"
-      ) {
+      if (!jsonSchema.properties && typeof jsonSchema.additionalProperties === "object") {
         return `[...new Array(5).keys()].map(_ => ({ [faker.lorem.word()]: ${transformJSONSchemaToFakerCode(
           jsonSchema.additionalProperties as OpenAPIV3.SchemaObject,
         )} })).reduce((acc, next) => Object.assign(acc, next), {})`;
@@ -88,10 +82,7 @@ export function transformJSONSchemaToFakerCode(
 /**
  * See https://json-schema.org/understanding-json-schema/reference/string.html#built-in-formats
  */
-function transformStringBasedOnFormat(
-  schema: OpenAPIV3.NonArraySchemaObject,
-  key?: string,
-) {
+function transformStringBasedOnFormat(schema: OpenAPIV3.NonArraySchemaObject, key?: string) {
   const { format, minLength, maxLength, pattern } = schema;
   if (format === "date-time" || key?.toLowerCase().endsWith("_at")) {
     return "faker.date.past()";
@@ -102,17 +93,10 @@ function transformStringBasedOnFormat(
   if (format === "date") {
     return "faker.date.past().toISOString().substring(0,10)";
   }
-  if (
-    format === "uuid" ||
-    key?.toLowerCase() === "id" ||
-    key?.toLowerCase().endsWith("id")
-  ) {
+  if (format === "uuid" || key?.toLowerCase() === "id" || key?.toLowerCase().endsWith("id")) {
     return "faker.string.uuid()";
   }
-  if (
-    ["idn-email", "email"].includes(format ?? "") ||
-    key?.toLowerCase().includes("email")
-  ) {
+  if (["idn-email", "email"].includes(format ?? "") || key?.toLowerCase().includes("email")) {
     return "faker.internet.email()";
   }
   if (["hostname", "idn-hostname"].includes(format ?? "")) {
@@ -125,16 +109,10 @@ function transformStringBasedOnFormat(
     return "faker.internet.ipv6()";
   }
   if (
-    ["uri", "uri-reference", "iri", "iri-reference", "uri-template"].includes(
-      format ?? "",
-    ) ||
+    ["uri", "uri-reference", "iri", "iri-reference", "uri-template"].includes(format ?? "") ||
     key?.toLowerCase().includes("url")
   ) {
-    if (
-      ["photo", "image", "picture"].some((image) =>
-        key?.toLowerCase().includes(image),
-      )
-    ) {
+    if (["photo", "image", "picture"].some((image) => key?.toLowerCase().includes(image))) {
       return "faker.image.url()";
     }
     return "faker.internet.url()";

@@ -35,9 +35,7 @@ class Swagger implements SwaggerContract {
     return new Swagger(document);
   }
 
-  static async #openApiV3Doc(
-    rawFile: TOptions["input"],
-  ): Promise<OpenAPIV3.Document> {
+  static async #openApiV3Doc(rawFile: TOptions["input"]): Promise<OpenAPIV3.Document> {
     const doc = await SwaggerParser.bundle(rawFile);
     const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
 

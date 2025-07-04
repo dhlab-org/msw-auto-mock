@@ -22,27 +22,21 @@ class ControllerTypeAdapter implements AdapterContract {
             type: P.union("integer", "string", "boolean", "object", "number"),
           },
         }),
-        (p) =>
-          p
-            .filter((p) => p.in === "path")
-            .map((p) => `${camelCase(p.name)}: string`),
+        (p) => p.filter((p) => p.in === "path").map((p) => `${camelCase(p.name)}: string`),
       )
       // @TODO 추후 다른 타입도 지원해야 함
       .otherwise(() => [])
       .filter(Boolean)
       .join(",\n");
 
-    return pathParamsTypeContents
-      ? `{${pathParamsTypeContents}}`
-      : "Record<string, never>";
+    return pathParamsTypeContents ? `{${pathParamsTypeContents}}` : "Record<string, never>";
   }
 
   get requestDtoTypeName(): string | null {
     return match(this.operation.request)
       .with(
         { content: { "application/json": { schema: { $ref: P.string } } } },
-        (r) =>
-          `${r.content["application/json"].schema.$ref.split("/").at(-1)}Dto`,
+        (r) => `${r.content["application/json"].schema.$ref.split("/").at(-1)}Dto`,
       )
       .otherwise(() => null);
   }

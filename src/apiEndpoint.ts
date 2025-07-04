@@ -32,10 +32,7 @@ class ApiEndpoint implements ApiEndpointContract {
 
   get byEntity() {
     const operations = this.collection;
-    return groupBy(
-      operations,
-      (op) => op.path.split("/")[this.options.entityPathIndex ?? 1],
-    );
+    return groupBy(operations, (op) => op.path.split("/")[this.options.entityPathIndex ?? 1]);
   }
 
   get entities() {
@@ -43,30 +40,23 @@ class ApiEndpoint implements ApiEndpointContract {
   }
 
   #getOperationDefinitions(): TOperationDefinition[] {
-    const operationKeys = Object.values(
-      OpenAPIV3.HttpMethods,
-    ) as OpenAPIV3.HttpMethods[];
-    return Object.entries(this.swagger.apiDoc.paths).flatMap(
-      ([path, pathItem]) =>
-        !pathItem
-          ? []
-          : Object.entries(pathItem)
-              .filter((arg): arg is [string, OpenAPIV3.OperationObject] =>
-                operationKeys.includes(arg[0] as any),
-              )
-              .map(([verb, operation]) => {
-                const id = camelCase(
-                  operation.operationId ?? `${verb}/${path}`,
-                );
-                return {
-                  path,
-                  verb,
-                  id,
-                  responses: operation.responses,
-                  requests: operation.requestBody,
-                  parameters: operation.parameters,
-                };
-              }),
+    const operationKeys = Object.values(OpenAPIV3.HttpMethods) as OpenAPIV3.HttpMethods[];
+    return Object.entries(this.swagger.apiDoc.paths).flatMap(([path, pathItem]) =>
+      !pathItem
+        ? []
+        : Object.entries(pathItem)
+            .filter((arg): arg is [string, OpenAPIV3.OperationObject] => operationKeys.includes(arg[0] as any))
+            .map(([verb, operation]) => {
+              const id = camelCase(operation.operationId ?? `${verb}/${path}`);
+              return {
+                path,
+                verb,
+                id,
+                responses: operation.responses,
+                requests: operation.requestBody,
+                parameters: operation.parameters,
+              };
+            }),
     );
   }
 
@@ -88,11 +78,8 @@ class ApiEndpoint implements ApiEndpointContract {
   }
 
   #codeFilter(operation: TOperationDefinition): TOperationDefinition {
-    const filteredResponses = this.#filteredResponsesByCodes(
-      operation.responses,
-    );
-    const transformedResponses =
-      this.#responsesToKeyValueObject(filteredResponses);
+    const filteredResponses = this.#filteredResponsesByCodes(operation.responses);
+    const transformedResponses = this.#responsesToKeyValueObject(filteredResponses);
 
     return {
       ...operation,
@@ -102,11 +89,7 @@ class ApiEndpoint implements ApiEndpointContract {
 
   #filteredResponsesByCodes(responses: OpenAPIV3.ResponsesObject) {
     const rawCodes = this.options?.codes;
-    const codes = rawCodes
-      ? rawCodes.indexOf(",") !== -1
-        ? rawCodes?.split(",")
-        : [rawCodes]
-      : null;
+    const codes = rawCodes ? (rawCodes.indexOf(",") !== -1 ? rawCodes?.split(",") : [rawCodes]) : null;
 
     return Object.entries(responses).filter(([code]) => {
       if (codes && !codes.includes(code)) {
@@ -116,20 +99,12 @@ class ApiEndpoint implements ApiEndpointContract {
     });
   }
 
-  #responsesToKeyValueObject(
-    filteredResponses: [
-      string,
-      OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject,
-    ][],
-  ) {
+  #responsesToKeyValueObject(filteredResponses: [string, OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject][]) {
     return filteredResponses
       .map(([code, response]) => ({
         [code]: response,
       }))
-      .reduce(
-        (acc, curr) => Object.assign(acc, curr),
-        {} as OpenAPIV3.ResponsesObject,
-      );
+      .reduce((acc, curr) => Object.assign(acc, curr), {} as OpenAPIV3.ResponsesObject);
   }
 
   #toOperation(definition: TOperationDefinition): TOperation {
@@ -192,15 +167,10 @@ function autoPopRefs<T>(cb: () => T) {
   return res;
 }
 
-function resolve(
-  schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
-  apiGen: ApiGenerator,
-) {
+function resolve(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, apiGen: ApiGenerator) {
   if (isReference(schema)) {
     if (resolvingRefs.includes(schema.$ref)) {
-      console.warn(
-        `circular reference for path ${[...resolvingRefs, schema.$ref].join(" -> ")} found`,
-      );
+      console.warn(`circular reference for path ${[...resolvingRefs, schema.$ref].join(" -> ")} found`);
       return {};
     }
     resolvingRefs.push(schema.$ref);
@@ -208,24 +178,15 @@ function resolve(
   return { ...apiGen.resolve(schema) };
 }
 
-function recursiveResolveSchema(
-  schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
-  apiGen: ApiGenerator,
-) {
+function recursiveResolveSchema(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject, apiGen: ApiGenerator) {
   return autoPopRefs(() => {
     const resolvedSchema = resolve(schema, apiGen) as OpenAPIV3.SchemaObject;
 
     if (resolvedSchema.type === "array") {
       resolvedSchema.items = resolve(resolvedSchema.items, apiGen);
-      resolvedSchema.items = recursiveResolveSchema(
-        resolvedSchema.items,
-        apiGen,
-      );
+      resolvedSchema.items = recursiveResolveSchema(resolvedSchema.items, apiGen);
     } else if (resolvedSchema.type === "object") {
-      if (
-        !resolvedSchema.properties &&
-        typeof resolvedSchema.additionalProperties === "object"
-      ) {
+      if (!resolvedSchema.properties && typeof resolvedSchema.additionalProperties === "object") {
         if (isReference(resolvedSchema.additionalProperties)) {
           resolvedSchema.additionalProperties = recursiveResolveSchema(
             resolve(resolvedSchema.additionalProperties, apiGen),
@@ -235,9 +196,7 @@ function recursiveResolveSchema(
       }
 
       if (resolvedSchema.properties) {
-        resolvedSchema.properties = Object.entries(
-          resolvedSchema.properties,
-        ).reduce(
+        resolvedSchema.properties = Object.entries(resolvedSchema.properties).reduce(
           (resolved, [key, value]) => {
             resolved[key] = recursiveResolveSchema(value, apiGen);
             return resolved;
@@ -248,17 +207,11 @@ function recursiveResolveSchema(
     }
 
     if (resolvedSchema.allOf) {
-      resolvedSchema.allOf = resolvedSchema.allOf.map((item) =>
-        recursiveResolveSchema(item, apiGen),
-      );
+      resolvedSchema.allOf = resolvedSchema.allOf.map((item) => recursiveResolveSchema(item, apiGen));
     } else if (resolvedSchema.oneOf) {
-      resolvedSchema.oneOf = resolvedSchema.oneOf.map((item) =>
-        recursiveResolveSchema(item, apiGen),
-      );
+      resolvedSchema.oneOf = resolvedSchema.oneOf.map((item) => recursiveResolveSchema(item, apiGen));
     } else if (resolvedSchema.anyOf) {
-      resolvedSchema.anyOf = resolvedSchema.anyOf.map((item) =>
-        recursiveResolveSchema(item, apiGen),
-      );
+      resolvedSchema.anyOf = resolvedSchema.anyOf.map((item) => recursiveResolveSchema(item, apiGen));
     }
 
     return resolvedSchema;

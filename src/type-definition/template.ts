@@ -15,12 +15,8 @@ class ControllerTypeTemplate implements TemplateContract {
     const hasStreamingResponse = this.#hasStreamingResponse(operations);
 
     const dtoImports =
-      dtoTypes.size > 0
-        ? `import type { ${Array.from(dtoTypes).join(", ")} } from '${this.DTO_IMPORT_PATH}';`
-        : "";
-    const streamingImport = hasStreamingResponse
-      ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';`
-      : "";
+      dtoTypes.size > 0 ? `import type { ${Array.from(dtoTypes).join(", ")} } from '${this.DTO_IMPORT_PATH}';` : "";
+    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';` : "";
 
     const imports = [dtoImports, streamingImport].filter(Boolean).join("\n");
 
@@ -106,15 +102,10 @@ class ControllerTypeTemplate implements TemplateContract {
   #hasStreamingResponse(operations: TOperation[]): boolean {
     return operations.some((op) =>
       op.response.some(
-        (response) =>
-          response.responses &&
-          Object.keys(response.responses).includes("text/event-stream"),
+        (response) => response.responses && Object.keys(response.responses).includes("text/event-stream"),
       ),
     );
   }
 }
 
-export {
-  ControllerTypeTemplate,
-  type TemplateContract as ControllerTypeTemplateContract,
-};
+export { ControllerTypeTemplate, type TemplateContract as ControllerTypeTemplateContract };
