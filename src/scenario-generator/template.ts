@@ -18,7 +18,7 @@ class ScenarioTemplate implements TemplateContract {
  */
 export const scenarios: TScenarioConfig = {
   // 예시 시나리오들 (필요에 따라 수정/추가)
-  S01: {
+  'TC-1.1': {
     description: '성공 시나리오',
     api: {
       // "/users": {
@@ -32,7 +32,7 @@ export const scenarios: TScenarioConfig = {
       // }
     }
   },
-  E01: {
+  'TC-1.2': {
     description: '오류 시나리오',
     api: {
       // "/users": {
