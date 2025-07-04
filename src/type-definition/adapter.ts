@@ -45,15 +45,11 @@ class ControllerTypeAdapter implements AdapterContract {
     return (
       match(responses)
         .with(
-          {
-            'application/json': { title: P.string, properties: P.nonNullable },
-          },
+          { 'application/json': { title: P.string, properties: P.nonNullable } },
           r => `${r['application/json'].title}Dto`,
         )
         .with(
-          {
-            'application/json': { title: P.string, items: { title: P.string } },
-          },
+          { 'application/json': { title: P.string, items: { title: P.string } } },
           r => `${r['application/json'].items.title}Dto`,
         )
         // @TODO 추후 다른 타입도 지원해야 함
