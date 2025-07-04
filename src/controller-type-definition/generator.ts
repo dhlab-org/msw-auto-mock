@@ -8,10 +8,10 @@ type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
 };
 
-class TypeDefinitionGenerator implements GeneratorContract {
+class ControllerTypeDefinitionGenerator implements GeneratorContract {
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly template: ControllerTypeTemplateContract;
-  private readonly OUTPUT_DIR = '__types__';
+  private readonly OUTPUT_DIR = '__types__/controllers';
 
   constructor(apiEndpoint: ApiEndpointContract) {
     this.apiEndpoint = apiEndpoint;
@@ -47,4 +47,4 @@ class TypeDefinitionGenerator implements GeneratorContract {
   }
 }
 
-export { TypeDefinitionGenerator };
+export { ControllerTypeDefinitionGenerator as TypeDefinitionGenerator };

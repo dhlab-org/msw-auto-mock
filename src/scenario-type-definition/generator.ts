@@ -10,7 +10,7 @@ type GeneratorContract = {
 class ScenarioTypeDefinitionGenerator implements GeneratorContract {
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly template: ScenarioTypeTemplateContract;
-  private readonly OUTPUT_DIR = '__types__';
+  private readonly OUTPUT_DIR = '__types__/scenarios';
 
   constructor(apiEndpoint: ApiEndpointContract) {
     this.apiEndpoint = apiEndpoint;
