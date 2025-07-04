@@ -1,9 +1,11 @@
 import path from 'node:path';
 import { ApiEndpoint } from './apiEndpoint';
+import { TypeDefinitionGenerator } from './controller-type-definition/generator';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
+import { ScenarioGenerator } from './scenario-generator/generator';
+import { ScenarioTypeDefinitionGenerator } from './scenario-type-definition/generator';
 import { Swagger } from './swagger';
-import { TypeDefinitionGenerator } from './type-definition/generator';
 import type { TOptions } from './types';
 
 /**
@@ -27,6 +29,8 @@ async function generateMocks(options: TOptions) {
     new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
     new MSWServerGenerator(options.environment).generate(targetFolder),
     new TypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
+    new ScenarioTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
+    new ScenarioGenerator().generate(targetFolder),
   ]);
 
   return {
@@ -37,3 +41,4 @@ async function generateMocks(options: TOptions) {
 
 export { generateMocks };
 export type { TOptions, TStreamingEvent } from './types';
+export { selectResponseByScenario, type ResponseObject } from './scenario-selector';
