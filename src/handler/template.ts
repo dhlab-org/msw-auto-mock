@@ -45,11 +45,11 @@ class HandlerTemplate implements TemplateContract {
 
   ofAllCombined(entities: string[]): string {
     const handlersImport = entities
-      .map((entity) => `import { ${entity}Handlers } from './${entity}.handlers';`)
+      .map(entity => `import { ${entity}Handlers } from './${entity}.handlers';`)
       .join('\n');
 
     const combineHandlers = `export const handlers = [
-      ${entities.map((entity) => `...${entity}Handlers,`).join('\n')}
+      ${entities.map(entity => `...${entity}Handlers,`).join('\n')}
     ]`;
 
     return [handlersImport, combineHandlers].join('\n\n');
@@ -81,10 +81,8 @@ class HandlerTemplate implements TemplateContract {
   }
 
   #hasStreamingResponse(entityOperations: TOperation[]): boolean {
-    return entityOperations.some((op) =>
-      op.response.some(
-        (response) => response.responses && Object.keys(response.responses).includes('text/event-stream'),
-      ),
+    return entityOperations.some(op =>
+      op.response.some(response => response.responses && Object.keys(response.responses).includes('text/event-stream')),
     );
   }
 
@@ -113,7 +111,7 @@ class HandlerTemplate implements TemplateContract {
 
   #handlers(entityOperations: TOperation[]): string {
     return entityOperations
-      .map((op) => this.#handler(op))
+      .map(op => this.#handler(op))
       .join('\n')
       .trimEnd();
   }
@@ -122,7 +120,7 @@ class HandlerTemplate implements TemplateContract {
     return `
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
       ${this.#bypassLogic()}
-      const resultArray = [${op.response.map((response) => this.#responseObject(response))}];
+      const resultArray = [${op.response.map(response => this.#responseObject(response))}];
       const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
     
       return new HttpResponse(selectedResult.body, {
@@ -182,7 +180,7 @@ class HandlerTemplate implements TemplateContract {
     vm.createContext(vmContext);
 
     return entityOperations
-      .map((op) => op.response.map((r) => this.#resultFunction(r, context, vmContext)).join('\n'))
+      .map(op => op.response.map(r => this.#resultFunction(r, context, vmContext)).join('\n'))
       .join('\n');
   }
 
@@ -199,7 +197,7 @@ class HandlerTemplate implements TemplateContract {
       `;
     }
 
-    const jsonResponseKey = Object.keys(response.responses).find((r) => r.startsWith('application/json'));
+    const jsonResponseKey = Object.keys(response.responses).find(r => r.startsWith('application/json'));
     if (!jsonResponseKey) return '';
 
     const fakerResult = transformJSONSchemaToFakerCode(response.responses[jsonResponseKey]);

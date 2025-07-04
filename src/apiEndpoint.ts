@@ -25,14 +25,14 @@ class ApiEndpoint implements ApiEndpointContract {
   get collection() {
     const operationDefinitions = this.#getOperationDefinitions();
     return operationDefinitions
-      .filter((op) => this.#shouldIncludeOperation(op))
-      .map((op) => this.#codeFilter(op))
-      .map((definition) => this.#toOperation(definition));
+      .filter(op => this.#shouldIncludeOperation(op))
+      .map(op => this.#codeFilter(op))
+      .map(definition => this.#toOperation(definition));
   }
 
   get byEntity() {
     const operations = this.collection;
-    return groupBy(operations, (op) => op.path.split('/')[this.options.entityPathIndex ?? 1]);
+    return groupBy(operations, op => op.path.split('/')[this.options.entityPathIndex ?? 1]);
   }
 
   get entities() {
@@ -207,11 +207,11 @@ function recursiveResolveSchema(schema: OpenAPIV3.ReferenceObject | OpenAPIV3.Sc
     }
 
     if (resolvedSchema.allOf) {
-      resolvedSchema.allOf = resolvedSchema.allOf.map((item) => recursiveResolveSchema(item, apiGen));
+      resolvedSchema.allOf = resolvedSchema.allOf.map(item => recursiveResolveSchema(item, apiGen));
     } else if (resolvedSchema.oneOf) {
-      resolvedSchema.oneOf = resolvedSchema.oneOf.map((item) => recursiveResolveSchema(item, apiGen));
+      resolvedSchema.oneOf = resolvedSchema.oneOf.map(item => recursiveResolveSchema(item, apiGen));
     } else if (resolvedSchema.anyOf) {
-      resolvedSchema.anyOf = resolvedSchema.anyOf.map((item) => recursiveResolveSchema(item, apiGen));
+      resolvedSchema.anyOf = resolvedSchema.anyOf.map(item => recursiveResolveSchema(item, apiGen));
     }
 
     return resolvedSchema;

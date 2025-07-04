@@ -21,7 +21,7 @@ class ControllerTypeTemplate implements TemplateContract {
     const imports = [dtoImports, streamingImport].filter(Boolean).join('\n');
 
     const entityType = this.#handlerMethodTypes(operations)
-      .map((handler) => {
+      .map(handler => {
         return `
         ${handler.identifierName}: (info: Parameters<HttpResponseResolver<${handler.pathParams}, ${handler.requestBodyType}>>[0])=> ${handler.responseBodyType} | Promise<${handler.responseBodyType}>;
       `;
@@ -40,13 +40,13 @@ class ControllerTypeTemplate implements TemplateContract {
 
   ofAllCombined(entityList: string[]): string {
     const imports = entityList
-      .map((entity) => {
+      .map(entity => {
         return `import type { ${pascalCase(`T_${entity}_Controllers`)} } from './${entity}.type';`;
       })
       .join('\n');
 
     const entityTypeIntersection = entityList
-      .map((entity) => {
+      .map(entity => {
         return pascalCase(`T_${entity}_Controllers`);
       })
       .join(' & ');
@@ -100,10 +100,8 @@ class ControllerTypeTemplate implements TemplateContract {
   }
 
   #hasStreamingResponse(operations: TOperation[]): boolean {
-    return operations.some((op) =>
-      op.response.some(
-        (response) => response.responses && Object.keys(response.responses).includes('text/event-stream'),
-      ),
+    return operations.some(op =>
+      op.response.some(response => response.responses && Object.keys(response.responses).includes('text/event-stream')),
     );
   }
 }

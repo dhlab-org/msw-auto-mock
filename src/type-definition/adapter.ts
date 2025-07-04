@@ -22,7 +22,7 @@ class ControllerTypeAdapter implements AdapterContract {
             type: P.union('integer', 'string', 'boolean', 'object', 'number'),
           },
         }),
-        (p) => p.filter((p) => p.in === 'path').map((p) => `${camelCase(p.name)}: string`),
+        p => p.filter(p => p.in === 'path').map(p => `${camelCase(p.name)}: string`),
       )
       // @TODO 추후 다른 타입도 지원해야 함
       .otherwise(() => [])
@@ -36,7 +36,7 @@ class ControllerTypeAdapter implements AdapterContract {
     return match(this.operation.request)
       .with(
         { content: { 'application/json': { schema: { $ref: P.string } } } },
-        (r) => `${r.content['application/json'].schema.$ref.split('/').at(-1)}Dto`,
+        r => `${r.content['application/json'].schema.$ref.split('/').at(-1)}Dto`,
       )
       .otherwise(() => null);
   }
@@ -48,13 +48,13 @@ class ControllerTypeAdapter implements AdapterContract {
           {
             'application/json': { title: P.string, properties: P.nonNullable },
           },
-          (r) => `${r['application/json'].title}Dto`,
+          r => `${r['application/json'].title}Dto`,
         )
         .with(
           {
             'application/json': { title: P.string, items: { title: P.string } },
           },
-          (r) => `${r['application/json'].items.title}Dto`,
+          r => `${r['application/json'].items.title}Dto`,
         )
         // @TODO 추후 다른 타입도 지원해야 함
         .otherwise(() => null)
@@ -65,11 +65,11 @@ class ControllerTypeAdapter implements AdapterContract {
     return match(responses)
       .with(
         { 'application/json': { title: P.string, properties: P.nonNullable } },
-        (r) => `${r['application/json'].title}Dto`,
+        r => `${r['application/json'].title}Dto`,
       )
       .with(
         { 'application/json': { title: P.string, items: { title: P.string } } },
-        (r) => `${r['application/json'].items.title}Dto[]`,
+        r => `${r['application/json'].items.title}Dto[]`,
       )
       .with({ 'text/event-stream': P.any }, () => 'TStreamingEvent[]')
       .otherwise(() => 'null');

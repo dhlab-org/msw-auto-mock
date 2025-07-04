@@ -22,7 +22,7 @@ class MSWServerGenerator implements GeneratorContract {
     };
 
     const environments = config[this.environment ?? 'default'];
-    await Promise.all(environments.map((env) => this.#generateServer(targetFolder, env)));
+    await Promise.all(environments.map(env => this.#generateServer(targetFolder, env)));
   }
 
   async #generateServer(targetFolder: string, type: TServerType): Promise<void> {

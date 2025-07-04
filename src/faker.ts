@@ -17,7 +17,7 @@ export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObje
 
   if (Array.isArray(jsonSchema.type)) {
     return `faker.helpers.arrayElement([${jsonSchema.type
-      .map((type) => transformJSONSchemaToFakerCode({ ...jsonSchema, type }))
+      .map(type => transformJSONSchemaToFakerCode({ ...jsonSchema, type }))
       .join(',')}])`;
   }
 
@@ -32,12 +32,12 @@ export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObje
 
   if (jsonSchema.oneOf) {
     const schemas = jsonSchema.oneOf as OpenAPIV3.SchemaObject[];
-    return `faker.helpers.arrayElement([${schemas.map((i) => transformJSONSchemaToFakerCode(i))}])`;
+    return `faker.helpers.arrayElement([${schemas.map(i => transformJSONSchemaToFakerCode(i))}])`;
   }
 
   if (jsonSchema.anyOf) {
     const schemas = jsonSchema.anyOf as OpenAPIV3.SchemaObject[];
-    return `faker.helpers.arrayElement([${schemas.map((i) => transformJSONSchemaToFakerCode(i))}])`;
+    return `faker.helpers.arrayElement([${schemas.map(i => transformJSONSchemaToFakerCode(i))}])`;
   }
 
   switch (jsonSchema.type) {
@@ -112,7 +112,7 @@ function transformStringBasedOnFormat(schema: OpenAPIV3.NonArraySchemaObject, ke
     ['uri', 'uri-reference', 'iri', 'iri-reference', 'uri-template'].includes(format ?? '') ||
     key?.toLowerCase().includes('url')
   ) {
-    if (['photo', 'image', 'picture'].some((image) => key?.toLowerCase().includes(image))) {
+    if (['photo', 'image', 'picture'].some(image => key?.toLowerCase().includes(image))) {
       return 'faker.image.url()';
     }
     return 'faker.internet.url()';
