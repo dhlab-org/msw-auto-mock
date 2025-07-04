@@ -4,7 +4,7 @@ import type { OpenAPIV3 } from "openapi-types";
 export type TOptions<
   TControllers = Record<
     string,
-    (info: Parameters<HttpResponseResolver>[0]) => Object | null
+    (info: Parameters<HttpResponseResolver>[0]) => object | null
   >,
 > = {
   input: string;
