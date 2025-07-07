@@ -1,4 +1,4 @@
-import merge from 'lodash/merge';
+import { merge } from 'es-toolkit';
 import type { OpenAPIV3 } from 'openapi-types';
 import { isValidRegExp } from './utils.mjs';
 
@@ -27,7 +27,12 @@ export function transformJSONSchemaToFakerCode(jsonSchema?: OpenAPIV3.SchemaObje
 
   if (jsonSchema.allOf) {
     const { allOf, ...rest } = jsonSchema;
-    return transformJSONSchemaToFakerCode(merge({}, ...allOf, rest));
+    const schemaObjects = allOf.filter(
+      (item): item is OpenAPIV3.SchemaObject => item && typeof item === 'object' && !('$ref' in item),
+    );
+    const merged = schemaObjects.reduce((acc, schema) => merge(acc, schema), rest);
+
+    return transformJSONSchemaToFakerCode(merged);
   }
 
   if (jsonSchema.oneOf) {

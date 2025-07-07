@@ -33,7 +33,6 @@
     "@apidevtools/swagger-parser": "10.1.0",
     "cac": "6.7.14",
     "es-toolkit": "^1.37.2",
-    "lodash": "4.17.21",
     "prettier": "3.3.2",
     "swagger2openapi": "7.0.8",
     "ts-pattern": "5.2.0"
@@ -41,7 +40,6 @@
   "devDependencies": {
     "@biomejs/biome": "^1.8.0",
     "@changesets/cli": "2.27.7",
-    "@types/lodash": "4.17.6",
     "@types/node": "20.14.9",
     "lefthook": "1.6.18",
     "msw": "2.7.3",

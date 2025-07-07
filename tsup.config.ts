@@ -12,16 +12,15 @@ export const tsup: Options[] = [
     dts: true,
     target: 'es2022',
     platform: 'neutral',
-    noExternal: ['lodash'],
   },
-  // Node.js 전용 기능들
+  // Node.js 전용 기능들 (CJS only to avoid ESM dynamic require issues)
   {
     entry: ['src/node.ts'],
     splitting: false,
     sourcemap: false,
     clean: false,
     minify: false,
-    format: ['cjs', 'esm'],
+    format: ['cjs'],
     dts: true,
     outDir: 'dist/node',
     external: ['node:fs', 'node:path', 'fs', 'path'],
