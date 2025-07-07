@@ -1,6 +1,6 @@
 import merge from 'lodash/merge';
 import type { OpenAPIV3 } from 'openapi-types';
-import { isValidRegExp } from './utils';
+import { isValidRegExp } from './utils.mjs';
 
 export const MAX_STRING_LENGTH = 42;
 

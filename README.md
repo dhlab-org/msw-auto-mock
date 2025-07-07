@@ -223,3 +223,257 @@ src/app/mocks/
 - 🌐 React (Browser)
 - ⚡ Next.js (Node.js + Browser)
 - 📱 React Native
+
+## 설치
+
+```bash
+npm install @dataai/msw-auto-mock
+# 또는
+yarn add @dataai/msw-auto-mock
+# 또는
+pnpm add @dataai/msw-auto-mock
+```
+
+## 환경별 사용법
+
+### 기본 사용법 (환경 상관없이)
+
+환경에 상관없이 사용할 수 있는 기능들입니다.
+
+```typescript
+// 타입 정의, 시나리오 선택, 가짜 데이터 생성 등
+import { 
+  selectResponseByScenario, 
+  transformJSONSchemaToFakerCode,
+  type TOptions,
+  type TScenarioConfig,
+  type ResponseObject
+} from '@dataai/msw-auto-mock';
+```
+
+### Node.js 환경 (코드 생성)
+
+Node.js 환경에서는 OpenAPI 스키마를 기반으로 MSW 핸들러 파일을 생성할 수 있습니다.
+
+```typescript
+// Node.js 전용 기능
+import { generateMocks } from '@dataai/msw-auto-mock/node';
+
+// 환경 상관없이 사용 가능한 기능들 (필요시 별도 import)
+import { 
+  selectResponseByScenario, 
+  transformJSONSchemaToFakerCode,
+  type TOptions 
+} from '@dataai/msw-auto-mock';
+
+await generateMocks({
+  input: 'path/to/openapi.json',
+  outputDir: 'src/mocks',
+  environment: 'react' // 'react', 'next', 'react-native'
+});
+```
+
+#### React 컴포넌트에서 사용 예제
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { http, HttpResponse } from 'msw';
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+
+const MyComponent: React.FC = () => {
+  const [mockData, setMockData] = useState(null);
+
+  useEffect(() => {
+    // 시나리오 설정
+    const scenarios = {
+      'user-error': {
+        description: '사용자 오류 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 400, delay: 1000 }
+          }
+        }
+      },
+      'success': {
+        description: '성공 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 200, delay: 500 }
+          }
+        }
+      }
+    };
+
+    // MSW 핸들러 설정
+    const handler = http.get('/api/users', (info) => {
+      const responses = [
+        { status: 200, responseType: 'application/json', body: JSON.stringify({ users: [] }) },
+        { status: 400, responseType: 'application/json', body: JSON.stringify({ error: 'Bad Request' }) },
+        { status: 500, responseType: 'application/json', body: JSON.stringify({ error: 'Server Error' }) }
+      ];
+
+      const selectedIndex = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
+      const selectedResponse = responses[selectedIndex];
+      
+      return HttpResponse.json(
+        JSON.parse(selectedResponse.body || '{}'),
+        { status: selectedResponse.status }
+      );
+    });
+
+    // 가짜 데이터 생성 예제
+    const userSchema = {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        email: { type: 'string', format: 'email' },
+        age: { type: 'integer', minimum: 18, maximum: 100 }
+      }
+    };
+
+    const fakerCode = transformJSONSchemaToFakerCode(userSchema);
+    console.log('Generated faker code:', fakerCode);
+
+  }, []);
+
+  return (
+    <div>
+      <h1>MSW Auto Mock React Example</h1>
+      {/* 컴포넌트 내용 */}
+    </div>
+  );
+};
+```
+
+#### Next.js에서 사용 예제
+
+```typescript
+// pages/api/mocks/setup.ts 또는 app/api/mocks/setup/route.ts
+import { generateMocks } from '@dataai/msw-auto-mock/node';
+import type { TOptions } from '@dataai/msw-auto-mock';
+
+export default async function handler(req: any, res: any) {
+  if (process.env.NODE_ENV === 'development') {
+    const options: TOptions = {
+      input: './public/openapi.json',
+      outputDir: './src/mocks',
+      environment: 'next'
+    };
+    
+    await generateMocks(options);
+    
+    res.status(200).json({ message: 'Mocks generated successfully' });
+  } else {
+    res.status(404).json({ message: 'Not found' });
+  }
+}
+```
+
+```typescript
+// components/MockProvider.tsx
+import React from 'react';
+import { selectResponseByScenario } from '@dataai/msw-auto-mock';
+
+export const MockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // 브라우저 환경에서 MSW 설정
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('../mocks/browser').then(({ worker }) => {
+        worker.start();
+      });
+    }
+  }, []);
+
+  return <>{children}</>;
+};
+```
+
+## API 문서
+
+### 환경 상관없이 사용 가능한 API
+
+#### `selectResponseByScenario`
+
+시나리오 기반으로 응답을 선택하는 함수입니다.
+
+```typescript
+function selectResponseByScenario(
+  verb: string,
+  path: string,
+  resultArray: ResponseObject[],
+  info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
+  scenarios?: TScenarioConfig
+): number
+```
+
+#### `transformJSONSchemaToFakerCode`
+
+OpenAPI 스키마를 Faker.js 코드로 변환하는 함수입니다.
+
+```typescript
+function transformJSONSchemaToFakerCode(
+  jsonSchema?: OpenAPIV3.SchemaObject,
+  key?: string
+): string
+```
+
+### 타입 정의
+
+```typescript
+export type TScenarioConfig = {
+  [scenarioId: string]: {
+    description: string;
+    api: Record<string, Record<string, {
+      status: number;
+      delay?: number;
+    }>>;
+  };
+};
+
+export type ResponseObject = {
+  status: number;
+  responseType: string | undefined;
+  body: string | undefined;
+};
+```
+
+## 패키지 구조
+
+이 라이브러리는 기능별로 분리된 패키지로 제공됩니다:
+
+- **기본 (메인 엔트리)**: 환경 상관없이 사용 가능한 기능들
+- **Node.js 전용**: 파일 시스템 접근이 필요한 코드 생성 기능
+
+```
+@dataai/msw-auto-mock
+├── dist/
+│   ├── index.js      # 기본 ESM (환경 상관없이)
+│   ├── index.cjs     # 기본 CommonJS (환경 상관없이)
+│   └── node/
+│       ├── node.js   # Node.js 전용 ESM
+│       └── node.cjs  # Node.js 전용 CommonJS
+```
+
+## 사용법 요약
+
+- **환경 상관없이 사용 가능**: `import { ... } from '@dataai/msw-auto-mock'`
+- **Node.js 전용 기능**: `import { generateMocks } from '@dataai/msw-auto-mock/node'`
+
+### 실제 사용 예시
+
+```typescript
+// React/Vue/Angular 등 모든 환경에서
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+
+// Node.js에서 파일 생성 기능이 필요한 경우
+import { generateMocks } from '@dataai/msw-auto-mock/node';
+
+// 둘 다 필요하면 각각 import
+import { selectResponseByScenario } from '@dataai/msw-auto-mock';
+import { generateMocks } from '@dataai/msw-auto-mock/node';
+```
+
+## 라이선스
+
+MIT

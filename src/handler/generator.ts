@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { ApiEndpointContract } from '../apiEndpoint';
 import type { SwaggerContract } from '../swagger';
 import type { TOptions } from '../types';
-import { writeFile } from '../utils';
+import { writeFile } from '../utils.cjs';
 import { HandlerTemplate, type HandlerTemplateContract, type TContext as TTemplateContext } from './template';
 
 type GeneratorContract = {

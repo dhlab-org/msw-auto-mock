@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { compact } from 'es-toolkit';
 import type { ApiEndpointContract } from '../apiEndpoint';
-import { writeFile } from '../utils';
+import { writeFile } from '../utils.cjs';
 import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 
 type GeneratorContract = {
