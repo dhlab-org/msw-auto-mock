@@ -65,7 +65,7 @@ export type TScenarioConfig = {
         string,
         {
           status: number;
-          delay?: number;
+          allowCustomStatus?: boolean;
         }
       >
     >;

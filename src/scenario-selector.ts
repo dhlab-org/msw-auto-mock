@@ -26,12 +26,37 @@ export function selectResponseByScenario(
   }
 
   const scenario = scenarios[scenarioId];
-  const targetStatus = scenario.api[path][verb.toUpperCase()].status;
+  const apiConfig = scenario.api[path]?.[verb.toUpperCase()];
 
-  if (!targetStatus) {
+  if (!apiConfig) {
     return getDefaultScenario();
   }
 
+  const { status: targetStatus, allowCustomStatus = false } = apiConfig;
+
   const matchedIndex = resultArray.findIndex(r => r.status === targetStatus);
-  return matchedIndex !== -1 ? matchedIndex : 0;
+
+  // 일치하는 응답이 있으면 해당 인덱스 반환
+  if (matchedIndex !== -1) {
+    return matchedIndex;
+  }
+
+  // allowCustomStatus가 true이면 동적으로 응답 객체 생성
+  if (allowCustomStatus) {
+    const customResponse: ResponseObject = {
+      status: targetStatus,
+      responseType: 'application/json',
+      body: JSON.stringify({
+        error: targetStatus >= 500 ? 'Internal Server Error' : 'Client Error',
+        status: targetStatus,
+      }),
+    };
+
+    // resultArray에 커스텀 응답 추가하고 해당 인덱스 반환
+    resultArray.push(customResponse);
+    return resultArray.length - 1;
+  }
+
+  // 그 외의 경우 기본 시나리오 반환
+  return getDefaultScenario();
 }

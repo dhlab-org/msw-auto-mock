@@ -224,6 +224,45 @@ src/app/mocks/
 - ⚡ Next.js (Node.js + Browser)
 - 📱 React Native
 
+## 🚀 ESM 지원 및 기술적 해결 방안
+
+### Node.js 전용 기능이 CommonJS인 이유
+
+`generateMocks` 함수는 다음과 같은 이유로 CommonJS로만 빌드됩니다:
+
+1. **의존성 제약**: `@apidevtools/swagger-parser`, `swagger2openapi` 등의 핵심 의존성이 ESM을 지원하지 않음
+2. **파일 시스템 접근**: Node.js의 `fs`, `path` 모듈을 직접 사용하여 파일 생성 작업 수행
+3. **안정성**: CommonJS 환경에서 검증된 라이브러리들과의 호환성 보장
+
+### React 프로젝트에서 ESM 사용 가능
+
+React 프로젝트에서는 다음과 같은 방식으로 ESM을 완전히 지원합니다:
+
+```typescript
+// ✅ React 환경에서 ESM 사용 가능
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+
+// ✅ Node.js 빌드 스크립트에서 CommonJS 사용
+// (예: React 프로젝트의 scripts/mock-generator.ts)
+import { generateMocks } from '@dataai/msw-auto-mock/node';
+```
+
+### 이중 패키지 구조의 장점
+
+```
+@dataai/msw-auto-mock
+├── dist/
+│   ├── index.js      # ESM (브라우저, React 등)
+│   ├── index.cjs     # CommonJS (Node.js 호환)
+│   └── node/
+│       └── node.cjs  # Node.js 전용 CommonJS
+```
+
+이 구조를 통해:
+- **브라우저 환경**: 가벼운 ESM 번들 사용
+- **Node.js 환경**: 안정적인 CommonJS 사용  
+- **React 프로젝트**: ESM으로 런타임 기능 사용, 빌드 스크립트는 CommonJS로 파일 생성
+
 ## 설치
 
 ```bash
@@ -395,7 +434,7 @@ export const MockProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 #### `selectResponseByScenario`
 
-시나리오 기반으로 응답을 선택하는 함수입니다.
+시나리오 기반으로 응답을 선택하는 함수입니다. 헤더 `x-scenario`를 통해 특정 시나리오를 활성화할 수 있습니다.
 
 ```typescript
 function selectResponseByScenario(
@@ -405,6 +444,55 @@ function selectResponseByScenario(
   info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
   scenarios?: TScenarioConfig
 ): number
+```
+
+**사용 예시:**
+
+```typescript
+// 시나리오 설정
+const scenarios = {
+  'success': {
+    description: '성공 시나리오',
+    api: {
+      '/api/users': { 'GET': { status: 200, delay: 500 } }
+    }
+  },
+  'error': {
+    description: '에러 시나리오',
+    api: {
+      '/api/users': { 'GET': { status: 500, delay: 1000 } }
+    }
+  }
+};
+
+// MSW 핸들러에서 사용
+const handler = http.get('/api/users', (info) => {
+  const responses = [
+    { status: 200, responseType: 'application/json', body: '{"users": []}' },
+    { status: 500, responseType: 'application/json', body: '{"error": "Server Error"}' }
+  ];
+  
+  // 헤더 기반 시나리오 선택
+  const selectedIndex = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
+  const selectedResponse = responses[selectedIndex];
+  
+  return HttpResponse.json(JSON.parse(selectedResponse.body), {
+    status: selectedResponse.status
+  });
+});
+```
+
+**테스트 시나리오 제어:**
+
+```bash
+# 성공 시나리오 테스트
+curl -H "x-scenario: success" http://localhost:3000/api/users
+
+# 에러 시나리오 테스트  
+curl -H "x-scenario: error" http://localhost:3000/api/users
+
+# 기본 시나리오 (헤더 없음 - 성공 응답 우선)
+curl http://localhost:3000/api/users
 ```
 
 #### `transformJSONSchemaToFakerCode`

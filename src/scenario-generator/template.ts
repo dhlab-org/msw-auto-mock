@@ -15,6 +15,8 @@ class ScenarioTemplate implements TemplateContract {
  * - 기본 (헤더 없음): 성공 응답 (200-299)
  * - curl -H "x-scenario: success" /api/users
  * - curl -H "x-scenario: error" /api/users
+ * 
+ * allowCustomStatus: true를 사용하면 OpenAPI 명세에 없는 status 코드도 사용 가능합니다.
  */
 export const scenarios: TScenarioConfig = {
   // 예시 시나리오들 (필요에 따라 수정/추가)
@@ -38,6 +40,10 @@ export const scenarios: TScenarioConfig = {
       // "/users": {
       //   "GET": { status: 500 },
       //   "POST": { status: 400 }
+      // },
+      // 커스텀 status 코드 사용 예시
+      // "/users/{id}": {
+      //   "GET": { status: 418, allowCustomStatus: true }
       // }
     }
   }

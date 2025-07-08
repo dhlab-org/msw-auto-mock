@@ -17,14 +17,21 @@ ${adapter.apiEndpointsType};
 
     const apiMethodsType = 'export type ApiMethods<T extends ApiPaths> = ApiEndpoints[T];';
 
+    const statusCodesType = `export type ApiStatusCodes = {
+${adapter.statusCodesType}
+};`;
+
     const scenarioConfigType = `export type ScenarioConfig = {
   [scenarioId: string]: {
     description: string;
     api: {
       [K in ApiPaths]?: {
         [M in ApiMethods<K>]?: {
+          status: ApiStatusCodes[K][M];
+          allowCustomStatus?: boolean;
+        } | {
           status: number;
-          delay?: number;
+          allowCustomStatus: true;
         };
       };
     };
@@ -44,6 +51,8 @@ ${apiEndpointsType}
 ${apiPathsType}
 
 ${apiMethodsType}
+
+${statusCodesType}
 
 ${scenarioConfigType}
 `;
