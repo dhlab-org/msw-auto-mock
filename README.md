@@ -329,7 +329,7 @@ const MyComponent: React.FC = () => {
         description: '사용자 오류 시나리오',
         api: {
           '/api/users': {
-            'GET': { status: 400, delay: 1000 }
+            'GET': { status: 400 }
           }
         }
       },
@@ -337,7 +337,15 @@ const MyComponent: React.FC = () => {
         description: '성공 시나리오',
         api: {
           '/api/users': {
-            'GET': { status: 200, delay: 500 }
+            'GET': { status: 200 }
+          }
+        }
+      },
+      'custom-error': {
+        description: '커스텀 에러 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 418, allowCustomStatus: true }
           }
         }
       }
@@ -351,8 +359,7 @@ const MyComponent: React.FC = () => {
         { status: 500, responseType: 'application/json', body: JSON.stringify({ error: 'Server Error' }) }
       ];
 
-      const selectedIndex = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
-      const selectedResponse = responses[selectedIndex];
+      const selectedResponse = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
       
       return HttpResponse.json(
         JSON.parse(selectedResponse.body || '{}'),
@@ -443,8 +450,15 @@ function selectResponseByScenario(
   resultArray: ResponseObject[],
   info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
   scenarios?: TScenarioConfig
-): number
+): ResponseObject
 ```
+
+#### `allowCustomStatus` 기능
+
+기본적으로 시나리오에서는 OpenAPI 명세에 정의된 status 코드만 사용할 수 있습니다. 하지만 `allowCustomStatus: true`를 설정하면 명세에 없는 임의의 status 코드도 사용할 수 있습니다.
+
+- **기본 동작**: OpenAPI 명세에 정의된 status 코드만 허용 (타입 안전성 보장)
+- **allowCustomStatus: true**: 임의의 status 코드 사용 가능 (동적 에러 응답 생성)
 
 **사용 예시:**
 
@@ -454,13 +468,24 @@ const scenarios = {
   'success': {
     description: '성공 시나리오',
     api: {
-      '/api/users': { 'GET': { status: 200, delay: 500 } }
+      '/api/users': { 'GET': { status: 200 } }
     }
   },
   'error': {
     description: '에러 시나리오',
     api: {
-      '/api/users': { 'GET': { status: 500, delay: 1000 } }
+      '/api/users': { 'GET': { status: 500 } }
+    }
+  },
+  'custom-error': {
+    description: '커스텀 에러 시나리오',
+    api: {
+      '/api/users': { 
+        'GET': { 
+          status: 418, // "I'm a teapot" - OpenAPI 명세에 없는 status
+          allowCustomStatus: true 
+        } 
+      }
     }
   }
 };
@@ -472,11 +497,10 @@ const handler = http.get('/api/users', (info) => {
     { status: 500, responseType: 'application/json', body: '{"error": "Server Error"}' }
   ];
   
-  // 헤더 기반 시나리오 선택
-  const selectedIndex = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
-  const selectedResponse = responses[selectedIndex];
+  // 헤더 기반 시나리오 선택 - 이제 ResponseObject를 직접 반환
+  const selectedResponse = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
   
-  return HttpResponse.json(JSON.parse(selectedResponse.body), {
+  return HttpResponse.json(JSON.parse(selectedResponse.body || '{}'), {
     status: selectedResponse.status
   });
 });
@@ -490,6 +514,9 @@ curl -H "x-scenario: success" http://localhost:3000/api/users
 
 # 에러 시나리오 테스트  
 curl -H "x-scenario: error" http://localhost:3000/api/users
+
+# 커스텀 에러 시나리오 테스트 (OpenAPI 명세에 없는 418 status)
+curl -H "x-scenario: custom-error" http://localhost:3000/api/users
 
 # 기본 시나리오 (헤더 없음 - 성공 응답 우선)
 curl http://localhost:3000/api/users
@@ -506,6 +533,85 @@ function transformJSONSchemaToFakerCode(
 ): string
 ```
 
+## 🎯 allowCustomStatus 기능 상세 가이드
+
+### 사용 시나리오
+
+`allowCustomStatus: true` 기능은 다음과 같은 상황에서 유용합니다:
+
+1. **테스트 전용 에러 코드**: 특정 테스트 시나리오에서만 사용하는 에러 코드
+2. **OpenAPI 명세 미정의 응답**: 명세에는 없지만 실제 서버에서 발생할 수 있는 응답
+3. **프로토타이핑**: 새로운 API 응답을 실험하기 위한 임시 응답
+
+### 동작 방식
+
+```typescript
+// OpenAPI 명세에 200, 400, 500만 정의되어 있다고 가정
+const scenarios = {
+  'teapot-error': {
+    description: '티팟 에러 테스트',
+    api: {
+      '/api/users': {
+        'GET': { 
+          status: 418, // 명세에 없는 status
+          allowCustomStatus: true // 허용 플래그
+        }
+      }
+    }
+  }
+};
+```
+
+### 생성되는 응답
+
+`allowCustomStatus: true`로 설정된 시나리오가 활성화되면:
+
+```json
+{
+  "error": "Client Error", // 400-499는 "Client Error"
+  "status": 418
+}
+```
+
+또는
+
+```json
+{
+  "error": "Internal Server Error", // 500+는 "Internal Server Error"  
+  "status": 503
+}
+```
+
+### 타입 안전성
+
+TypeScript를 사용하는 경우:
+
+```typescript
+// ❌ 컴파일 에러 - 명세에 없는 status
+const badScenario = {
+  api: {
+    '/api/users': {
+      'GET': { status: 418 } // allowCustomStatus 없이는 사용 불가
+    }
+  }
+};
+
+// ✅ 정상 - allowCustomStatus로 명시적 허용
+const goodScenario = {
+  api: {
+    '/api/users': {
+      'GET': { status: 418, allowCustomStatus: true }
+    }
+  }
+};
+```
+
+### 주의사항
+
+- **명세 일치성**: `allowCustomStatus`는 명세와 목업 간의 일치성을 일부 포기하는 트레이드오프입니다
+- **테스트 전용**: 프로덕션 환경이 아닌 테스트/개발 환경에서만 사용하는 것을 권장합니다
+- **문서화**: 커스텀 status를 사용하는 경우 팀 내에서 충분한 문서화가 필요합니다
+
 ### 타입 정의
 
 ```typescript
@@ -514,7 +620,7 @@ export type TScenarioConfig = {
     description: string;
     api: Record<string, Record<string, {
       status: number;
-      delay?: number;
+      allowCustomStatus?: boolean;
     }>>;
   };
 };
