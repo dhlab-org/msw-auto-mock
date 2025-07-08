@@ -60,7 +60,7 @@
     "url": "https://github.com/zoubingwu/msw-auto-mock/issues"
   },
   "homepage": "https://github.com/zoubingwu/msw-auto-mock",
-  "files": ["dist", "dist/node"],
+  "files": ["dist"],
   "keywords": ["msw", "mock", "service-worker", "openapi"],
   "publishConfig": {
     "access": "public"
