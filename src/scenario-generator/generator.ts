@@ -26,7 +26,7 @@ class ScenarioGenerator implements GeneratorContract {
       return;
     }
 
-    const template = this.template.generate();
+    const template = this.template.ofConfig();
     await writeFile(scenarioFilePath, template);
   }
 }

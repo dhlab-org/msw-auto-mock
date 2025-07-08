@@ -1,9 +1,9 @@
 type TemplateContract = {
-  generate(): string;
+  ofConfig(): string;
 };
 
 class ScenarioTemplate implements TemplateContract {
-  generate(): string {
+  ofConfig(): string {
     return `import type { TScenarioConfig } from '@dataai/msw-auto-mock';
 
 /**
