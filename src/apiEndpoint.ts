@@ -3,7 +3,7 @@ import ApiGenerator, { isReference } from 'oazapfts/generate';
 import { OpenAPIV3 } from 'openapi-types';
 import type { SwaggerContract } from './swagger';
 import type { TOperation, TOptions } from './types';
-import { toExpressLikePath } from './utils.mjs';
+import { toExpressLikePath } from './utils.js';
 
 type ApiEndpointContract = {
   collection: TOperation[];
