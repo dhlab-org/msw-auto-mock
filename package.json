@@ -13,7 +13,6 @@
       "types": "./dist/index.d.ts"
     },
     "./node": {
-      "import": "./dist/node/node.js",
       "require": "./dist/node/node.cjs",
       "types": "./dist/node/node.d.ts"
     }

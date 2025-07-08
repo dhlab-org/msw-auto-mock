@@ -13,7 +13,6 @@ export const tsup: Options[] = [
     target: 'es2022',
     platform: 'neutral',
   },
-  // Node.js 전용 기능들 (CJS only to avoid ESM dynamic require issues)
   {
     entry: ['src/node.ts'],
     splitting: false,
@@ -23,7 +22,7 @@ export const tsup: Options[] = [
     format: ['cjs'],
     dts: true,
     outDir: 'dist/node',
-    external: ['node:fs', 'node:path', 'fs', 'path'],
+    external: ['node:fs', 'node:path', 'fs', 'path', 'typescript'],
     noExternal: ['swagger2openapi', 'oazapfts'],
     target: 'node20',
     platform: 'node',
