@@ -1,6 +1,6 @@
 import { merge } from 'es-toolkit';
 import type { OpenAPIV3 } from 'openapi-types';
-import { isValidRegExp } from './utils.js';
+import { isValidRegExp } from './utils';
 
 export const MAX_STRING_LENGTH = 42;
 
