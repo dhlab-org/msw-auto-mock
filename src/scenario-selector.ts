@@ -1,7 +1,7 @@
 import type { HttpResponseResolver } from 'msw';
 import type { TScenarioConfig } from './types';
 
-export type ResponseObject = {
+export type TResponseObject = {
   status: number;
   responseType: string | undefined;
   body: string | undefined;
@@ -10,11 +10,11 @@ export type ResponseObject = {
 export function selectResponseByScenario(
   verb: string,
   path: string,
-  resultArray: ResponseObject[],
+  resultArray: TResponseObject[],
   info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
   scenarios?: TScenarioConfig,
-): ResponseObject {
-  const getDefaultScenario = (): ResponseObject => {
+) {
+  const getDefaultScenario = () => {
     const successIndex = resultArray.findIndex(r => r.status >= 200 && r.status < 300);
     return resultArray[successIndex !== -1 ? successIndex : 0];
   };

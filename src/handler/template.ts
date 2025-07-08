@@ -57,9 +57,8 @@ class HandlerTemplate implements TemplateContract {
     return [
       `import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`,
       `import { faker } from '@faker-js/faker';`,
+      `import { type TStreamingEvent, selectResponseByScenario } from '@dataai/msw-auto-mock';`,
       `import { controllers } from '${context.controllerPath}';`,
-      `import type { TStreamingEvent, ResponseObject } from '@dataai/msw-auto-mock';`,
-      `import { selectResponseByScenario } from '@dataai/msw-auto-mock';`,
       `import { scenarios } from '../scenarios';`,
     ].join('\n');
   }

@@ -9,25 +9,25 @@ class ScenarioTypeTemplate implements TemplateContract {
   ofAllEndpoints(operations: TOperation[]): string {
     const adapter = new ScenarioTypeAdapter(operations);
 
-    const apiEndpointsType = `export type ApiEndpoints = {
+    const apiEndpointsType = `export type TApiEndpoints = {
 ${adapter.apiEndpointsType};
 };`;
 
-    const apiPathsType = 'export type ApiPaths = keyof ApiEndpoints;';
+    const apiPathsType = 'export type TApiPaths = keyof TApiEndpoints;';
 
-    const apiMethodsType = 'export type ApiMethods<T extends ApiPaths> = ApiEndpoints[T];';
+    const apiMethodsType = 'export type TApiMethods<T extends TApiPaths> = TApiEndpoints[T];';
 
-    const statusCodesType = `export type ApiStatusCodes = {
+    const statusCodesType = `export type TApiStatusCodes = {
 ${adapter.statusCodesType}
 };`;
 
-    const scenarioConfigType = `export type ScenarioConfig = {
+    const scenarioConfigType = `export type TScenarioConfig = {
   [scenarioId: string]: {
     description: string;
     api: {
-      [K in ApiPaths]?: {
-        [M in ApiMethods<K>]?: {
-          status: ApiStatusCodes[K][M];
+      [K in TApiPaths]?: {
+        [M in TApiMethods<K>]?: {
+          status: TApiStatusCodes[K][M];
           allowCustomStatus?: boolean;
         } | {
           status: number;
