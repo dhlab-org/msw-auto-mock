@@ -105,8 +105,7 @@ class HandlerTemplate implements TemplateContract {
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
       ${this.#bypassLogic()}
       const resultArray = [${op.response.map(response => this.#responseObject(response))}];
-      const selectedIndex = selectResponseByScenario('${op.verb}', '${op.path}', resultArray, info, scenarios);
-      const selectedResult = resultArray[selectedIndex];
+      const selectedResult = selectResponseByScenario('${op.verb}', '${op.path}', resultArray, info, scenarios);
     
       return new HttpResponse(selectedResult.body, {
         status: selectedResult.status,

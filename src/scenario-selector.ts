@@ -13,10 +13,10 @@ export function selectResponseByScenario(
   resultArray: ResponseObject[],
   info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
   scenarios?: TScenarioConfig,
-): number {
-  const getDefaultScenario = () => {
+): ResponseObject {
+  const getDefaultScenario = (): ResponseObject => {
     const successIndex = resultArray.findIndex(r => r.status >= 200 && r.status < 300);
-    return successIndex !== -1 ? successIndex : 0;
+    return resultArray[successIndex !== -1 ? successIndex : 0];
   };
 
   const scenarioId = info.request.headers.get('x-scenario') || 'default';
@@ -34,16 +34,14 @@ export function selectResponseByScenario(
 
   const { status: targetStatus, allowCustomStatus = false } = apiConfig;
 
-  const matchedIndex = resultArray.findIndex(r => r.status === targetStatus);
+  const matchedResponse = resultArray.find(r => r.status === targetStatus);
 
-  // 일치하는 응답이 있으면 해당 인덱스 반환
-  if (matchedIndex !== -1) {
-    return matchedIndex;
+  if (matchedResponse) {
+    return matchedResponse;
   }
 
-  // allowCustomStatus가 true이면 동적으로 응답 객체 생성
   if (allowCustomStatus) {
-    const customResponse: ResponseObject = {
+    return {
       status: targetStatus,
       responseType: 'application/json',
       body: JSON.stringify({
@@ -51,12 +49,7 @@ export function selectResponseByScenario(
         status: targetStatus,
       }),
     };
-
-    // resultArray에 커스텀 응답 추가하고 해당 인덱스 반환
-    resultArray.push(customResponse);
-    return resultArray.length - 1;
   }
 
-  // 그 외의 경우 기본 시나리오 반환
   return getDefaultScenario();
 }
