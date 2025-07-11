@@ -1,42 +1,54 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-
-name: Publish Github Packages
+name: Release & Publish
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*' # v1.0.0, v1.2.3 등 Semantic Versioning 태그에 반응
+
+permissions:
+  contents: write 
+  id-token: write 
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout Repo
+      - name: 코드 체크아웃
         uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+        
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build Package
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: pnpm 설정
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+          
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+        
+      - name: 린트 검사
+        run: pnpm lint
+        
+      - name: 빌드
         run: pnpm build
-
-      - name: Build Package
-        run: pnpm test
-
-      - name: Create Release Pull Request or Publish to npm
-        uses: changesets/action@v1
-        with:
-          commit: "release: bump versions"
-          title: "release: bump versions"
-          publish: pnpm release
+        
+      - name: npm에 배포
+        run: |
+          # dhlab organization에 public 패키지로 배포
+          npm publish --access public --provenance
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: GitHub 릴리즈 생성
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true # PR 기반 자동 릴리즈 노트 생성
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
