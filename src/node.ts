@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { ApiEndpoint } from './apiEndpoint';
-import { TypeDefinitionGenerator } from './controller-type-definition/generator';
+import { ControllerTypeDefinitionGenerator } from './controller-type-definition/generator';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
 import { ScenarioTypeDefinitionGenerator } from './scenario-type-definition/generator';
@@ -29,7 +29,7 @@ async function generateMocks(options: TOptions) {
   await Promise.all([
     new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
     new MSWServerGenerator(options.environment).generate(targetFolder),
-    new TypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
+    new ControllerTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
     new ScenarioTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
     new ScenarioGenerator().generate(targetFolder),
   ]);
