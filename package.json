@@ -1,5 +1,5 @@
 {
-  "name": "@dataai/msw-auto-mock",
+  "name": "@dhlab/msw-auto-mock",
   "version": "0.31.0",
   "description": "Generate random mock data from OpenAPI descriptions for msw.",
   "type": "module",
