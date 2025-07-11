@@ -15,14 +15,10 @@ class ScenarioGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    await this.#generateScenarioIfNotExists(targetFolder);
-  }
-
-  async #generateScenarioIfNotExists(targetFolder: string): Promise<void> {
     const scenarioFilePath = path.resolve(process.cwd(), targetFolder, 'scenarios.ts');
 
-    // 시나리오 파일이 이미 존재하면 생성하지 않음
     if (fs.existsSync(scenarioFilePath)) {
+      // 시나리오 파일이 이미 존재하면 생성하지 않음
       return;
     }
 

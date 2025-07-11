@@ -18,10 +18,6 @@ class ScenarioTypeDefinitionGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    await this.#generateScenarioTypeFile(targetFolder);
-  }
-
-  async #generateScenarioTypeFile(targetFolder: string): Promise<void> {
     const template = this.template.ofAllEndpoints(this.apiEndpoint.collection);
     const filePath = path.resolve(process.cwd(), path.join(targetFolder, this.OUTPUT_DIR), 'scenarios.type.ts');
     await writeFile(filePath, template);
