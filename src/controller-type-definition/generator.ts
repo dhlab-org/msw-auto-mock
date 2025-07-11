@@ -47,4 +47,4 @@ class ControllerTypeDefinitionGenerator implements GeneratorContract {
   }
 }
 
-export { ControllerTypeDefinitionGenerator as TypeDefinitionGenerator };
+export { ControllerTypeDefinitionGenerator };
