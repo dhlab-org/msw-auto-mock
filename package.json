@@ -26,7 +26,7 @@
     "changeset": "changeset",
     "release": "changeset publish"
   },
-  "author": "zoubingwu<zoubingwu@gmail.com>",
+  "author": "dhlab-fe",
   "license": "MIT",
   "dependencies": {
     "@apidevtools/swagger-parser": "10.1.0",
@@ -54,12 +54,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/zoubingwu/msw-auto-mock.git"
+    "url": "https://github.com/dhlab-org/msw-auto-mock.git"
   },
   "bugs": {
-    "url": "https://github.com/zoubingwu/msw-auto-mock/issues"
+    "url": "https://github.com/dhlab-org/msw-auto-mock/issues"
   },
-  "homepage": "https://github.com/zoubingwu/msw-auto-mock",
+  "homepage": "https://github.com/dhlab-org/msw-auto-mock",
   "files": ["dist"],
   "keywords": ["msw", "mock", "service-worker", "openapi"],
   "publishConfig": {
