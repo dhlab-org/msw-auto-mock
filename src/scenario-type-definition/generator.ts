@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { ApiEndpointContract } from '../apiEndpoint';
+import type { ApiEndpointContract } from '../api-endpoint';
 import { writeFile } from '../utils.cjs';
 import { ScenarioTypeTemplate, type ScenarioTypeTemplateContract } from './template';
 

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { ApiEndpoint } from './apiEndpoint';
+import { ApiEndpoint } from './api-endpoint';
 import { ControllerTypeDefinitionGenerator } from './controller-type-definition/generator';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
