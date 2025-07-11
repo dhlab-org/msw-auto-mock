@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { TOptions } from '../types';
-import { writeFile } from '../utils';
+import { writeFile } from '../utils.cjs';
 
 type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;

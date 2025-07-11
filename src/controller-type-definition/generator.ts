@@ -1,17 +1,17 @@
 import path from 'node:path';
 import { compact } from 'es-toolkit';
-import type { ApiEndpointContract } from '../apiEndpoint';
-import { writeFile } from '../utils';
+import type { ApiEndpointContract } from '../api-endpoint';
+import { writeFile } from '../utils.cjs';
 import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 
 type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
 };
 
-class TypeDefinitionGenerator implements GeneratorContract {
+class ControllerTypeDefinitionGenerator implements GeneratorContract {
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly template: ControllerTypeTemplateContract;
-  private readonly OUTPUT_DIR = '__types__';
+  private readonly OUTPUT_DIR = '__types__/controllers';
 
   constructor(apiEndpoint: ApiEndpointContract) {
     this.apiEndpoint = apiEndpoint;
@@ -47,4 +47,4 @@ class TypeDefinitionGenerator implements GeneratorContract {
   }
 }
 
-export { TypeDefinitionGenerator };
+export { ControllerTypeDefinitionGenerator };

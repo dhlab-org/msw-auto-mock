@@ -1,6 +1,7 @@
 import vm from 'node:vm';
 import { faker } from '@faker-js/faker';
 import { camelCase } from 'es-toolkit';
+import pkg from '../../package.json';
 import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
 import type { TOperation, TResponse } from '../types';
 
@@ -12,7 +13,6 @@ type TemplateContract = {
 class HandlerTemplate implements TemplateContract {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
     const imports = this.#imports(context);
-    const apiCounter = this.#apiCounter();
     const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
     const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : '';
     const handlers = this.#handlers(entityOperations);
@@ -32,7 +32,6 @@ class HandlerTemplate implements TemplateContract {
       const baseURL = '${context.baseURL}';
       ${context.isStatic ? '' : `const MAX_ARRAY_LENGTH = ${context.maxArrayLength};`}
       
-      ${apiCounter}
       ${streamingUtils}
 
       export const ${entity}Handlers = [
@@ -59,25 +58,10 @@ class HandlerTemplate implements TemplateContract {
     return [
       `import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`,
       `import { faker } from '@faker-js/faker';`,
+      `import { type TStreamingEvent, selectResponseByScenario } from '${pkg.name}';`,
       `import { controllers } from '${context.controllerPath}';`,
-      `import type { TStreamingEvent } from '@dataai/msw-auto-mock';`,
+      `import { scenarios } from '../scenarios';`,
     ].join('\n');
-  }
-
-  #apiCounter(): string {
-    return `
-      // Map to store counters for each API endpoint
-      const apiCounters = new Map<string, number>();
-
-      const next = (apiKey: string) => {
-        let currentCount = apiCounters.get(apiKey) ?? 0;
-        if (currentCount === Number.MAX_SAFE_INTEGER - 1) {
-          currentCount = 0;
-        }
-        apiCounters.set(apiKey, currentCount + 1);
-        return currentCount;
-      };
-    `;
   }
 
   #hasStreamingResponse(entityOperations: TOperation[]): boolean {
@@ -121,7 +105,7 @@ class HandlerTemplate implements TemplateContract {
     http.${op.verb}(\`\${baseURL}${op.path}\`, async (info) => {
       ${this.#bypassLogic()}
       const resultArray = [${op.response.map(response => this.#responseObject(response))}];
-      const selectedResult = resultArray[next(\`${op.verb} ${op.path}\`) % resultArray.length];
+      const selectedResult = selectResponseByScenario('${op.verb}', '${op.path}', resultArray, info, scenarios);
     
       return new HttpResponse(selectedResult.body, {
         status: selectedResult.status,

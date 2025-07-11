@@ -46,10 +46,10 @@ pnpm build
     "generate-msw-mock": "tsx src/app/mocks/mock-generator.ts"
   },
   "devDependencies": {
-    "@dataai/msw-auto-mock": "^0.31.0"
+    "@dhlab/msw-auto-mock": "^0.31.0"
   },
   "resolutions": {
-    "@dataai/msw-auto-mock": "portal:../msw-auto-mock"
+    "@dhlab/msw-auto-mock": "portal:../msw-auto-mock"
   }
 }
 ```
@@ -66,7 +66,7 @@ yarn
 `my-project/src/app/mocks/mock-generator.ts` 파일을 생성:
 
 ```ts
-import { type TOptions, generateMocks } from '@dataai/msw-auto-mock';
+import { type TOptions, generateMocks } from '@dhlab/msw-auto-mock';
 import type { TControllers } from './__types__/index';
 import { controllers } from './controllers/index';
 
@@ -223,3 +223,451 @@ src/app/mocks/
 - 🌐 React (Browser)
 - ⚡ Next.js (Node.js + Browser)
 - 📱 React Native
+
+## 🚀 ESM 지원 및 기술적 해결 방안
+
+### Node.js 전용 기능이 CommonJS인 이유
+
+`generateMocks` 함수는 다음과 같은 이유로 CommonJS로만 빌드됩니다:
+
+1. **의존성 제약**: `@apidevtools/swagger-parser`, `swagger2openapi` 등의 핵심 의존성이 ESM을 지원하지 않음
+2. **파일 시스템 접근**: Node.js의 `fs`, `path` 모듈을 직접 사용하여 파일 생성 작업 수행
+3. **안정성**: CommonJS 환경에서 검증된 라이브러리들과의 호환성 보장
+
+### React 프로젝트에서 ESM 사용 가능
+
+React 프로젝트에서는 다음과 같은 방식으로 ESM을 완전히 지원합니다:
+
+```typescript
+// ✅ React 환경에서 ESM 사용 가능
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
+
+// ✅ Node.js 빌드 스크립트에서 CommonJS 사용
+// (예: React 프로젝트의 scripts/mock-generator.ts)
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+```
+
+### 이중 패키지 구조의 장점
+
+```
+@dhlab/msw-auto-mock
+├── dist/
+│   ├── index.js      # ESM (브라우저, React 등)
+│   ├── index.cjs     # CommonJS (Node.js 호환)
+│   └── node/
+│       └── node.cjs  # Node.js 전용 CommonJS
+```
+
+이 구조를 통해:
+- **브라우저 환경**: 가벼운 ESM 번들 사용
+- **Node.js 환경**: 안정적인 CommonJS 사용  
+- **React 프로젝트**: ESM으로 런타임 기능 사용, 빌드 스크립트는 CommonJS로 파일 생성
+
+## 설치
+
+```bash
+npm install @dhlab/msw-auto-mock
+# 또는
+yarn add @dhlab/msw-auto-mock
+# 또는
+pnpm add @dhlab/msw-auto-mock
+```
+
+## 환경별 사용법
+
+### 기본 사용법 (환경 상관없이)
+
+환경에 상관없이 사용할 수 있는 기능들입니다.
+
+```typescript
+// 타입 정의, 시나리오 선택, 가짜 데이터 생성 등
+import { 
+  selectResponseByScenario, 
+  transformJSONSchemaToFakerCode,
+  type TOptions,
+  type TScenarioConfig,
+  type ResponseObject
+} from '@dhlab/msw-auto-mock';
+```
+
+### Node.js 환경 (코드 생성)
+
+Node.js 환경에서는 OpenAPI 스키마를 기반으로 MSW 핸들러 파일을 생성할 수 있습니다.
+
+```typescript
+// Node.js 전용 기능
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+
+// 환경 상관없이 사용 가능한 기능들 (필요시 별도 import)
+import { 
+  selectResponseByScenario, 
+  transformJSONSchemaToFakerCode,
+  type TOptions 
+} from '@dhlab/msw-auto-mock';
+
+await generateMocks({
+  input: 'path/to/openapi.json',
+  outputDir: 'src/mocks',
+  environment: 'react' // 'react', 'next', 'react-native'
+});
+```
+
+#### React 컴포넌트에서 사용 예제
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { http, HttpResponse } from 'msw';
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
+
+const MyComponent: React.FC = () => {
+  const [mockData, setMockData] = useState(null);
+
+  useEffect(() => {
+    // 시나리오 설정
+    const scenarios = {
+      'user-error': {
+        description: '사용자 오류 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 400 }
+          }
+        }
+      },
+      'success': {
+        description: '성공 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 200 }
+          }
+        }
+      },
+      'custom-error': {
+        description: '커스텀 에러 시나리오',
+        api: {
+          '/api/users': {
+            'GET': { status: 418, allowCustomStatus: true }
+          }
+        }
+      }
+    };
+
+    // MSW 핸들러 설정
+    const handler = http.get('/api/users', (info) => {
+      const responses = [
+        { status: 200, responseType: 'application/json', body: JSON.stringify({ users: [] }) },
+        { status: 400, responseType: 'application/json', body: JSON.stringify({ error: 'Bad Request' }) },
+        { status: 500, responseType: 'application/json', body: JSON.stringify({ error: 'Server Error' }) }
+      ];
+
+      const selectedResponse = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
+      
+      return HttpResponse.json(
+        JSON.parse(selectedResponse.body || '{}'),
+        { status: selectedResponse.status }
+      );
+    });
+
+    // 가짜 데이터 생성 예제
+    const userSchema = {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        email: { type: 'string', format: 'email' },
+        age: { type: 'integer', minimum: 18, maximum: 100 }
+      }
+    };
+
+    const fakerCode = transformJSONSchemaToFakerCode(userSchema);
+    console.log('Generated faker code:', fakerCode);
+
+  }, []);
+
+  return (
+    <div>
+      <h1>MSW Auto Mock React Example</h1>
+      {/* 컴포넌트 내용 */}
+    </div>
+  );
+};
+```
+
+#### Next.js에서 사용 예제
+
+```typescript
+// pages/api/mocks/setup.ts 또는 app/api/mocks/setup/route.ts
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+import type { TOptions } from '@dhlab/msw-auto-mock';
+
+export default async function handler(req: any, res: any) {
+  if (process.env.NODE_ENV === 'development') {
+    const options: TOptions = {
+      input: './public/openapi.json',
+      outputDir: './src/mocks',
+      environment: 'next'
+    };
+    
+    await generateMocks(options);
+    
+    res.status(200).json({ message: 'Mocks generated successfully' });
+  } else {
+    res.status(404).json({ message: 'Not found' });
+  }
+}
+```
+
+```typescript
+// components/MockProvider.tsx
+import React from 'react';
+import { selectResponseByScenario } from '@dhlab/msw-auto-mock';
+
+export const MockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // 브라우저 환경에서 MSW 설정
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('../mocks/browser').then(({ worker }) => {
+        worker.start();
+      });
+    }
+  }, []);
+
+  return <>{children}</>;
+};
+```
+
+## API 문서
+
+### 환경 상관없이 사용 가능한 API
+
+#### `selectResponseByScenario`
+
+시나리오 기반으로 응답을 선택하는 함수입니다. 헤더 `x-scenario`를 통해 특정 시나리오를 활성화할 수 있습니다.
+
+```typescript
+function selectResponseByScenario(
+  verb: string,
+  path: string,
+  resultArray: ResponseObject[],
+  info: Parameters<HttpResponseResolver<Record<string, never>, null>>[0],
+  scenarios?: TScenarioConfig
+): ResponseObject
+```
+
+#### `allowCustomStatus` 기능
+
+기본적으로 시나리오에서는 OpenAPI 명세에 정의된 status 코드만 사용할 수 있습니다. 하지만 `allowCustomStatus: true`를 설정하면 명세에 없는 임의의 status 코드도 사용할 수 있습니다.
+
+- **기본 동작**: OpenAPI 명세에 정의된 status 코드만 허용 (타입 안전성 보장)
+- **allowCustomStatus: true**: 임의의 status 코드 사용 가능 (동적 에러 응답 생성)
+
+**사용 예시:**
+
+```typescript
+// 시나리오 설정
+const scenarios = {
+  'success': {
+    description: '성공 시나리오',
+    api: {
+      '/api/users': { 'GET': { status: 200 } }
+    }
+  },
+  'error': {
+    description: '에러 시나리오',
+    api: {
+      '/api/users': { 'GET': { status: 500 } }
+    }
+  },
+  'custom-error': {
+    description: '커스텀 에러 시나리오',
+    api: {
+      '/api/users': { 
+        'GET': { 
+          status: 418, // "I'm a teapot" - OpenAPI 명세에 없는 status
+          allowCustomStatus: true 
+        } 
+      }
+    }
+  }
+};
+
+// MSW 핸들러에서 사용
+const handler = http.get('/api/users', (info) => {
+  const responses = [
+    { status: 200, responseType: 'application/json', body: '{"users": []}' },
+    { status: 500, responseType: 'application/json', body: '{"error": "Server Error"}' }
+  ];
+  
+  // 헤더 기반 시나리오 선택 - 이제 ResponseObject를 직접 반환
+  const selectedResponse = selectResponseByScenario('GET', '/api/users', responses, info, scenarios);
+  
+  return HttpResponse.json(JSON.parse(selectedResponse.body || '{}'), {
+    status: selectedResponse.status
+  });
+});
+```
+
+**테스트 시나리오 제어:**
+
+```bash
+# 성공 시나리오 테스트
+curl -H "x-scenario: success" http://localhost:3000/api/users
+
+# 에러 시나리오 테스트  
+curl -H "x-scenario: error" http://localhost:3000/api/users
+
+# 커스텀 에러 시나리오 테스트 (OpenAPI 명세에 없는 418 status)
+curl -H "x-scenario: custom-error" http://localhost:3000/api/users
+
+# 기본 시나리오 (헤더 없음 - 성공 응답 우선)
+curl http://localhost:3000/api/users
+```
+
+#### `transformJSONSchemaToFakerCode`
+
+OpenAPI 스키마를 Faker.js 코드로 변환하는 함수입니다.
+
+```typescript
+function transformJSONSchemaToFakerCode(
+  jsonSchema?: OpenAPIV3.SchemaObject,
+  key?: string
+): string
+```
+
+## 🎯 allowCustomStatus 기능 상세 가이드
+
+### 사용 시나리오
+
+`allowCustomStatus: true` 기능은 다음과 같은 상황에서 유용합니다:
+
+1. **테스트 전용 에러 코드**: 특정 테스트 시나리오에서만 사용하는 에러 코드
+2. **OpenAPI 명세 미정의 응답**: 명세에는 없지만 실제 서버에서 발생할 수 있는 응답
+3. **프로토타이핑**: 새로운 API 응답을 실험하기 위한 임시 응답
+
+### 동작 방식
+
+```typescript
+// OpenAPI 명세에 200, 400, 500만 정의되어 있다고 가정
+const scenarios = {
+  'teapot-error': {
+    description: '티팟 에러 테스트',
+    api: {
+      '/api/users': {
+        'GET': { 
+          status: 418, // 명세에 없는 status
+          allowCustomStatus: true // 허용 플래그
+        }
+      }
+    }
+  }
+};
+```
+
+### 생성되는 응답
+
+`allowCustomStatus: true`로 설정된 시나리오가 활성화되면:
+
+```json
+{
+  "error": "Client Error", // 400-499는 "Client Error"
+  "status": 418
+}
+```
+
+또는
+
+```json
+{
+  "error": "Internal Server Error", // 500+는 "Internal Server Error"  
+  "status": 503
+}
+```
+
+### 타입 안전성
+
+TypeScript를 사용하는 경우:
+
+```typescript
+// ❌ 컴파일 에러 - 명세에 없는 status
+const badScenario = {
+  api: {
+    '/api/users': {
+      'GET': { status: 418 } // allowCustomStatus 없이는 사용 불가
+    }
+  }
+};
+
+// ✅ 정상 - allowCustomStatus로 명시적 허용
+const goodScenario = {
+  api: {
+    '/api/users': {
+      'GET': { status: 418, allowCustomStatus: true }
+    }
+  }
+};
+```
+
+### 주의사항
+
+- **명세 일치성**: `allowCustomStatus`는 명세와 목업 간의 일치성을 일부 포기하는 트레이드오프입니다
+- **테스트 전용**: 프로덕션 환경이 아닌 테스트/개발 환경에서만 사용하는 것을 권장합니다
+- **문서화**: 커스텀 status를 사용하는 경우 팀 내에서 충분한 문서화가 필요합니다
+
+### 타입 정의
+
+```typescript
+export type TScenarioConfig = {
+  [scenarioId: string]: {
+    description: string;
+    api: Record<string, Record<string, {
+      status: number;
+      allowCustomStatus?: boolean;
+    }>>;
+  };
+};
+
+export type ResponseObject = {
+  status: number;
+  responseType: string | undefined;
+  body: string | undefined;
+};
+```
+
+## 패키지 구조
+
+이 라이브러리는 기능별로 분리된 패키지로 제공됩니다:
+
+- **기본 (메인 엔트리)**: 환경 상관없이 사용 가능한 기능들
+- **Node.js 전용**: 파일 시스템 접근이 필요한 코드 생성 기능
+
+```
+@dhlab/msw-auto-mock
+├── dist/
+│   ├── index.js      # 기본 ESM (환경 상관없이)
+│   ├── index.cjs     # 기본 CommonJS (환경 상관없이)
+│   └── node/
+│       ├── node.js   # Node.js 전용 ESM
+│       └── node.cjs  # Node.js 전용 CommonJS
+```
+
+## 사용법 요약
+
+- **환경 상관없이 사용 가능**: `import { ... } from '@dhlab/msw-auto-mock'`
+- **Node.js 전용 기능**: `import { generateMocks } from '@dhlab/msw-auto-mock/node'`
+
+### 실제 사용 예시
+
+```typescript
+// React/Vue/Angular 등 모든 환경에서
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
+
+// Node.js에서 파일 생성 기능이 필요한 경우
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+
+// 둘 다 필요하면 각각 import
+import { selectResponseByScenario } from '@dhlab/msw-auto-mock';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+```
+
+## 라이선스
+
+MIT

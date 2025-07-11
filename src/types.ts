@@ -55,3 +55,19 @@ export type TStreamingEvent = {
   data: string;
   delay?: number;
 };
+
+export type TScenarioConfig = {
+  [scenarioId: string]: {
+    description: string;
+    api: Record<
+      string,
+      Record<
+        string,
+        {
+          status: number;
+          allowCustomStatus?: boolean;
+        }
+      >
+    >;
+  };
+};
