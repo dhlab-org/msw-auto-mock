@@ -9,13 +9,13 @@ class ScenarioTypeAdapter implements AdapterContract {
   constructor(private readonly operations: TOperation[]) {}
 
   get apiEndpointsType(): string {
-    return Object.entries(this.#pathsWithMethods)
+    return Object.entries(this.#pathsWithMethods())
       .map(([path, methods]) => `  '${path}': ${methods.map(m => `'${m}'`).join(' | ')}`)
       .join(';\n');
   }
 
   get statusCodesType(): string {
-    const entries = Object.entries(this.#pathsWithStatusCodes);
+    const entries = Object.entries(this.#pathsWithStatusCodes());
 
     return entries
       .map(([path, methods]) => {
@@ -32,7 +32,7 @@ class ScenarioTypeAdapter implements AdapterContract {
       .join('\n');
   }
 
-  get #pathsWithMethods(): Record<string, string[]> {
+  #pathsWithMethods(): Record<string, string[]> {
     return this.operations.reduce(
       (acc, op) => {
         if (!acc[op.path]) {
@@ -48,7 +48,7 @@ class ScenarioTypeAdapter implements AdapterContract {
     );
   }
 
-  get #pathsWithStatusCodes(): Record<string, Record<string, number[]>> {
+  #pathsWithStatusCodes(): Record<string, Record<string, number[]>> {
     return this.operations.reduce(
       (acc, op) => {
         if (!acc[op.path]) {
