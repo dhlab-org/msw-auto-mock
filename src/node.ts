@@ -3,8 +3,8 @@ import { ApiEndpoint } from './apiEndpoint';
 import { TypeDefinitionGenerator } from './controller-type-definition/generator';
 import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
-import { ScenarioGenerator } from './scenario-generator/generator';
 import { ScenarioTypeDefinitionGenerator } from './scenario-type-definition/generator';
+import { ScenarioGenerator } from './scenario/generator';
 import { Swagger } from './swagger';
 import type { TOptions } from './types';
 

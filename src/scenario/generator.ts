@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeFile } from '../utils.cjs';
+import { writeFile } from '../utils.cjs.js';
 import { ScenarioTemplate, type ScenarioTemplateContract } from './template';
 
 type GeneratorContract = {
