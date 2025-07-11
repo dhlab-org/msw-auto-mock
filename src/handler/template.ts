@@ -1,6 +1,7 @@
 import vm from 'node:vm';
 import { faker } from '@faker-js/faker';
 import { camelCase } from 'es-toolkit';
+import pkg from '../../package.json';
 import { MAX_STRING_LENGTH, transformJSONSchemaToFakerCode } from '../faker';
 import type { TOperation, TResponse } from '../types';
 
@@ -57,7 +58,7 @@ class HandlerTemplate implements TemplateContract {
     return [
       `import { HttpResponse, http, bypass, passthrough, type HttpResponseResolver } from 'msw';`,
       `import { faker } from '@faker-js/faker';`,
-      `import { type TStreamingEvent, selectResponseByScenario } from '@dataai/msw-auto-mock';`,
+      `import { type TStreamingEvent, selectResponseByScenario } from '${pkg.name}';`,
       `import { controllers } from '${context.controllerPath}';`,
       `import { scenarios } from '../scenarios';`,
     ].join('\n');

@@ -1,4 +1,5 @@
 import { pascalCase } from 'es-toolkit';
+import pkg from '../../package.json';
 import type { TOperation } from '../types';
 import { ControllerTypeAdapter } from './adapter';
 
@@ -16,7 +17,7 @@ class ControllerTypeTemplate implements TemplateContract {
 
     const dtoImports =
       dtoTypes.size > 0 ? `import type { ${Array.from(dtoTypes).join(', ')} } from '${this.DTO_IMPORT_PATH}';` : '';
-    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dataai/msw-auto-mock';` : '';
+    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '${pkg.name}';` : '';
 
     const imports = [dtoImports, streamingImport].filter(Boolean).join('\n');
 

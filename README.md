@@ -46,10 +46,10 @@ pnpm build
     "generate-msw-mock": "tsx src/app/mocks/mock-generator.ts"
   },
   "devDependencies": {
-    "@dataai/msw-auto-mock": "^0.31.0"
+    "@dhlab/msw-auto-mock": "^0.31.0"
   },
   "resolutions": {
-    "@dataai/msw-auto-mock": "portal:../msw-auto-mock"
+    "@dhlab/msw-auto-mock": "portal:../msw-auto-mock"
   }
 }
 ```
@@ -66,7 +66,7 @@ yarn
 `my-project/src/app/mocks/mock-generator.ts` 파일을 생성:
 
 ```ts
-import { type TOptions, generateMocks } from '@dataai/msw-auto-mock';
+import { type TOptions, generateMocks } from '@dhlab/msw-auto-mock';
 import type { TControllers } from './__types__/index';
 import { controllers } from './controllers/index';
 
@@ -240,17 +240,17 @@ React 프로젝트에서는 다음과 같은 방식으로 ESM을 완전히 지�
 
 ```typescript
 // ✅ React 환경에서 ESM 사용 가능
-import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
 
 // ✅ Node.js 빌드 스크립트에서 CommonJS 사용
 // (예: React 프로젝트의 scripts/mock-generator.ts)
-import { generateMocks } from '@dataai/msw-auto-mock/node';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
 ```
 
 ### 이중 패키지 구조의 장점
 
 ```
-@dataai/msw-auto-mock
+@dhlab/msw-auto-mock
 ├── dist/
 │   ├── index.js      # ESM (브라우저, React 등)
 │   ├── index.cjs     # CommonJS (Node.js 호환)
@@ -266,11 +266,11 @@ import { generateMocks } from '@dataai/msw-auto-mock/node';
 ## 설치
 
 ```bash
-npm install @dataai/msw-auto-mock
+npm install @dhlab/msw-auto-mock
 # 또는
-yarn add @dataai/msw-auto-mock
+yarn add @dhlab/msw-auto-mock
 # 또는
-pnpm add @dataai/msw-auto-mock
+pnpm add @dhlab/msw-auto-mock
 ```
 
 ## 환경별 사용법
@@ -287,7 +287,7 @@ import {
   type TOptions,
   type TScenarioConfig,
   type ResponseObject
-} from '@dataai/msw-auto-mock';
+} from '@dhlab/msw-auto-mock';
 ```
 
 ### Node.js 환경 (코드 생성)
@@ -296,14 +296,14 @@ Node.js 환경에서는 OpenAPI 스키마를 기반으로 MSW 핸들러 파일�
 
 ```typescript
 // Node.js 전용 기능
-import { generateMocks } from '@dataai/msw-auto-mock/node';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
 
 // 환경 상관없이 사용 가능한 기능들 (필요시 별도 import)
 import { 
   selectResponseByScenario, 
   transformJSONSchemaToFakerCode,
   type TOptions 
-} from '@dataai/msw-auto-mock';
+} from '@dhlab/msw-auto-mock';
 
 await generateMocks({
   input: 'path/to/openapi.json',
@@ -317,7 +317,7 @@ await generateMocks({
 ```typescript
 import React, { useState, useEffect } from 'react';
 import { http, HttpResponse } from 'msw';
-import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
 
 const MyComponent: React.FC = () => {
   const [mockData, setMockData] = useState(null);
@@ -396,8 +396,8 @@ const MyComponent: React.FC = () => {
 
 ```typescript
 // pages/api/mocks/setup.ts 또는 app/api/mocks/setup/route.ts
-import { generateMocks } from '@dataai/msw-auto-mock/node';
-import type { TOptions } from '@dataai/msw-auto-mock';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
+import type { TOptions } from '@dhlab/msw-auto-mock';
 
 export default async function handler(req: any, res: any) {
   if (process.env.NODE_ENV === 'development') {
@@ -419,7 +419,7 @@ export default async function handler(req: any, res: any) {
 ```typescript
 // components/MockProvider.tsx
 import React from 'react';
-import { selectResponseByScenario } from '@dataai/msw-auto-mock';
+import { selectResponseByScenario } from '@dhlab/msw-auto-mock';
 
 export const MockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 브라우저 환경에서 MSW 설정
@@ -640,7 +640,7 @@ export type ResponseObject = {
 - **Node.js 전용**: 파일 시스템 접근이 필요한 코드 생성 기능
 
 ```
-@dataai/msw-auto-mock
+@dhlab/msw-auto-mock
 ├── dist/
 │   ├── index.js      # 기본 ESM (환경 상관없이)
 │   ├── index.cjs     # 기본 CommonJS (환경 상관없이)
@@ -651,21 +651,21 @@ export type ResponseObject = {
 
 ## 사용법 요약
 
-- **환경 상관없이 사용 가능**: `import { ... } from '@dataai/msw-auto-mock'`
-- **Node.js 전용 기능**: `import { generateMocks } from '@dataai/msw-auto-mock/node'`
+- **환경 상관없이 사용 가능**: `import { ... } from '@dhlab/msw-auto-mock'`
+- **Node.js 전용 기능**: `import { generateMocks } from '@dhlab/msw-auto-mock/node'`
 
 ### 실제 사용 예시
 
 ```typescript
 // React/Vue/Angular 등 모든 환경에서
-import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dataai/msw-auto-mock';
+import { selectResponseByScenario, transformJSONSchemaToFakerCode } from '@dhlab/msw-auto-mock';
 
 // Node.js에서 파일 생성 기능이 필요한 경우
-import { generateMocks } from '@dataai/msw-auto-mock/node';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
 
 // 둘 다 필요하면 각각 import
-import { selectResponseByScenario } from '@dataai/msw-auto-mock';
-import { generateMocks } from '@dataai/msw-auto-mock/node';
+import { selectResponseByScenario } from '@dhlab/msw-auto-mock';
+import { generateMocks } from '@dhlab/msw-auto-mock/node';
 ```
 
 ## 라이선스
