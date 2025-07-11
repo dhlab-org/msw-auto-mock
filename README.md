@@ -198,6 +198,14 @@ const options: ProgrammaticOptions = {
    * @default '@/app/mocks/controllers'
    */
   controllerPath: '@/app/mocks/controllers',
+
+  /**
+   * DTO 타입 import 경로
+   * @optional
+   * @default '@/shared/api/dto'
+   * FSD(Feature-Sliced Design) 패러다임에 따라 기본값이 @/shared/api/dto로 설정됩니다.
+   */
+  dtoImportPath: '@/shared/api/dto',
 };
 ```
 

@@ -1,6 +1,6 @@
 import { pascalCase } from 'es-toolkit';
 import pkg from '../../package.json';
-import type { TOperation } from '../types';
+import type { TOperation, TOptions } from '../types';
 import { ControllerTypeAdapter } from './adapter';
 
 type TemplateContract = {
@@ -9,7 +9,11 @@ type TemplateContract = {
 };
 
 class ControllerTypeTemplate implements TemplateContract {
-  private readonly DTO_IMPORT_PATH = '@/shared/api/dto';
+  private readonly DTO_IMPORT_PATH: string;
+
+  constructor(dtoImportPath: TOptions['dtoImportPath'] = '@/shared/api/dto') {
+    this.DTO_IMPORT_PATH = dtoImportPath;
+  }
 
   ofEntity(operations: TOperation[], entity: string): string {
     const dtoTypes = this.#dtoTypes(operations);

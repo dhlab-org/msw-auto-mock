@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { compact } from 'es-toolkit';
 import type { ApiEndpointContract } from '../api-endpoint';
+import type { TOptions } from '../types';
 import { writeFile } from '../utils.cjs';
 import { ControllerTypeTemplate, type ControllerTypeTemplateContract } from './template';
 
@@ -13,9 +14,9 @@ class ControllerTypeDefinitionGenerator implements GeneratorContract {
   private readonly template: ControllerTypeTemplateContract;
   private readonly OUTPUT_DIR = '__types__/controllers';
 
-  constructor(apiEndpoint: ApiEndpointContract) {
+  constructor(apiEndpoint: ApiEndpointContract, dtoImportPath?: TOptions['dtoImportPath']) {
     this.apiEndpoint = apiEndpoint;
-    this.template = new ControllerTypeTemplate();
+    this.template = new ControllerTypeTemplate(dtoImportPath);
   }
 
   async generate(targetFolder: string): Promise<void> {

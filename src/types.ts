@@ -33,6 +33,11 @@ export type TOptions<TControllers = Record<string, (info: Parameters<HttpRespons
    * default: 1
    */
   entityPathIndex?: number;
+  /**
+   * DTO 타입 import시 사용될 경로
+   * default: '@/shared/api/dto' (FSD 패러다임)
+   */
+  dtoImportPath?: string;
 };
 
 export type TOperation = {
