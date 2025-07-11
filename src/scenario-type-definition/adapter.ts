@@ -6,16 +6,40 @@ type AdapterContract = {
 };
 
 class ScenarioTypeAdapter implements AdapterContract {
-  constructor(private readonly operations: TOperation[]) {}
+  private readonly pathsWithMethods: Record<string, string[]> = {};
+  private readonly pathsWithStatusCodes: Record<string, Record<string, number[]>> = {};
+
+  constructor(private readonly operations: TOperation[]) {
+    for (const op of operations) {
+      const { path, verb, response } = op;
+      const method = verb.toUpperCase();
+
+      // ① pathsWithMethods
+      this.pathsWithMethods[path] ??= [];
+      if (!this.pathsWithMethods[path].includes(method)) {
+        this.pathsWithMethods[path].push(method);
+      }
+
+      // ② pathsWithStatusCodes
+      this.pathsWithStatusCodes[path] ??= {};
+      this.pathsWithStatusCodes[path][method] ??= [];
+      const statusList = this.pathsWithStatusCodes[path][method];
+
+      for (const res of response) {
+        const code = Number.parseInt(res.code, 10);
+        statusList.includes(code) || statusList.push(code);
+      }
+    }
+  }
 
   get apiEndpointsType(): string {
-    return Object.entries(this.#pathsWithMethods())
+    return Object.entries(this.pathsWithMethods)
       .map(([path, methods]) => `  '${path}': ${methods.map(m => `'${m}'`).join(' | ')}`)
       .join(';\n');
   }
 
   get statusCodesType(): string {
-    const entries = Object.entries(this.#pathsWithStatusCodes());
+    const entries = Object.entries(this.pathsWithStatusCodes);
 
     return entries
       .map(([path, methods]) => {
@@ -30,46 +54,6 @@ class ScenarioTypeAdapter implements AdapterContract {
         return `  '${path}': {\n${methodTypes}\n  };`;
       })
       .join('\n');
-  }
-
-  #pathsWithMethods(): Record<string, string[]> {
-    return this.operations.reduce(
-      (acc, op) => {
-        if (!acc[op.path]) {
-          acc[op.path] = [];
-        }
-        const method = op.verb.toUpperCase();
-        if (!acc[op.path].includes(method)) {
-          acc[op.path].push(method);
-        }
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-  }
-
-  #pathsWithStatusCodes(): Record<string, Record<string, number[]>> {
-    return this.operations.reduce(
-      (acc, op) => {
-        if (!acc[op.path]) {
-          acc[op.path] = {};
-        }
-        const method = op.verb.toUpperCase();
-        if (!acc[op.path][method]) {
-          acc[op.path][method] = [];
-        }
-
-        for (const res of op.response) {
-          const statusCode = Number.parseInt(res.code, 10);
-          if (!acc[op.path][method].includes(statusCode)) {
-            acc[op.path][method].push(statusCode);
-          }
-        }
-
-        return acc;
-      },
-      {} as Record<string, Record<string, number[]>>,
-    );
   }
 }
 
