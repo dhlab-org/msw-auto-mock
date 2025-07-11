@@ -29,7 +29,7 @@ async function generateMocks(options: TOptions) {
   await Promise.all([
     new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
     new MSWServerGenerator(options.environment).generate(targetFolder),
-    new ControllerTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
+    new ControllerTypeDefinitionGenerator(apiEndpoint, options.dtoImportPath).generate(targetFolder),
     new ScenarioTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),
     new ScenarioGenerator().generate(targetFolder),
   ]);
