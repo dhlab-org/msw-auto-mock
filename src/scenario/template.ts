@@ -42,7 +42,7 @@ export const scenarios: TScenarioConfig = {
       //   "POST": { status: 400 }
       // },
       // 커스텀 status 코드 사용 예시
-      // "/users/{id}": {
+      // "/users/:id": {
       //   "GET": { status: 418, allowCustomStatus: true }
       // }
     }
