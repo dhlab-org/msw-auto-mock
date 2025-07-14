@@ -1,5 +1,5 @@
 import { camelCase } from 'es-toolkit';
-import { P, match } from 'ts-pattern';
+import { P, isMatching, match } from 'ts-pattern';
 import type { TOperation, TResponse } from '../types';
 
 type AdapterContract = {
@@ -49,7 +49,7 @@ class ControllerTypeAdapter implements AdapterContract {
           r => `${r['application/json'].title}Dto`,
         )
         .with(
-          { 'application/json': { title: P.string, items: { title: P.string } } },
+          { 'application/json': { title: P.string, type: 'array', items: { title: P.string } } },
           r => `${r['application/json'].items.title}Dto`,
         )
         // @TODO 추후 다른 타입도 지원해야 함
@@ -64,11 +64,73 @@ class ControllerTypeAdapter implements AdapterContract {
         r => `${r['application/json'].title}Dto`,
       )
       .with(
-        { 'application/json': { title: P.string, items: { title: P.string } } },
+        { 'application/json': { title: P.string, type: 'array', items: { title: P.string } } },
         r => `${r['application/json'].items.title}Dto[]`,
+      )
+      .with({ 'application/json': { type: 'object', properties: P.nonNullable } }, r =>
+        this.#generateInlineType(r['application/json']),
+      )
+      .with(
+        { 'application/json': { type: 'array', items: { type: 'object', properties: P.nonNullable } } },
+        r => `${this.#generateInlineType(r['application/json'].items)}[]`,
       )
       .with({ 'text/event-stream': P.any }, () => 'TStreamingEvent[]')
       .otherwise(() => 'null');
+  }
+
+  #generateInlineType(schema: unknown): string {
+    if (isMatching({ title: P.string }, schema)) {
+      return `${schema.title}Dto`;
+    }
+
+    if (isMatching({ properties: P.nonNullable }, schema)) return 'object';
+
+    return isMatching({ properties: P.nonNullable }, schema)
+      ? `{ ${Object.entries(schema.properties)
+          .map(([key, value]: [string, unknown]) => {
+            const type = this.#getPropertyType(value);
+            return `${key}: ${type}`;
+          })
+          .join('; ')} }`
+      : 'object';
+  }
+
+  #getPropertyType(property: unknown): string {
+    if (isMatching({ title: P.string }, property)) {
+      return `${property.title}Dto`;
+    }
+
+    if (isMatching({ type: 'array', items: P.any }, property)) {
+      if (isMatching({ title: P.string }, property.items)) {
+        return `${property.items.title}Dto[]`;
+      }
+      if (isMatching({ type: P.string }, property.items)) {
+        return `${this.#getPropertyType(property.items)}[]`;
+      }
+      return 'any[]';
+    }
+
+    if (isMatching({ type: 'object', properties: P.nonNullable }, property)) {
+      return this.#generateInlineType(property);
+    }
+
+    switch (
+      match(property)
+        .with({ type: P.union('string', 'number', 'integer', 'boolean', 'object') }, p => p.type)
+        .otherwise(() => 'any')
+    ) {
+      case 'string':
+        return 'string';
+      case 'number':
+      case 'integer':
+        return 'number';
+      case 'boolean':
+        return 'boolean';
+      case 'object':
+        return 'object';
+      default:
+        return 'any';
+    }
   }
 
   handlerIdentifierName(response: TResponse): string {
