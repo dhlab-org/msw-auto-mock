@@ -58,7 +58,7 @@ class ControllerTypeAdapter implements AdapterContract {
   }
 
   responseBodyType(responses: TResponse['responses']): string {
-    const res = match(responses)
+    return match(responses)
       .with(
         { 'application/json': { title: P.string, properties: P.nonNullable } },
         r => `${r['application/json'].title}Dto`,
@@ -76,8 +76,6 @@ class ControllerTypeAdapter implements AdapterContract {
       )
       .with({ 'text/event-stream': P.any }, () => 'TStreamingEvent[]')
       .otherwise(() => 'null');
-    console.log(responses, res);
-    return res;
   }
 
   #generateInlineType(schema: unknown): string {
