@@ -13,7 +13,7 @@ class HandlerGenerator implements GeneratorContract {
   private readonly options: TOptions;
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly swagger: SwaggerContract;
-  private readonly OUTPUT_DIR = '__handlers__';
+  private readonly OUTPUT_DIR = '__handlers__/base';
   private readonly template: HandlerTemplateContract;
 
   constructor(options: TOptions, apiEndpoint: ApiEndpointContract, swagger: SwaggerContract) {
