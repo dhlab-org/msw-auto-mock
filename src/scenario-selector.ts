@@ -26,7 +26,7 @@ export function selectResponseByScenario(
   }
 
   const scenario = scenarios[scenarioId];
-  const apiConfig = scenario.api[path]?.[verb.toUpperCase()];
+  const apiConfig = scenario.type === 'custom-status' ? scenario.api[path]?.[verb.toUpperCase()] : undefined;
 
   if (!apiConfig) {
     return getDefaultScenario();

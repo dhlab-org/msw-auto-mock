@@ -64,6 +64,8 @@ export type TStreamingEvent = {
 export type TScenarioConfig = {
   [scenarioId: string]: {
     description: string;
+  } & {
+    type: 'custom-status',
     api: Record<
       string,
       Record<
@@ -74,5 +76,8 @@ export type TScenarioConfig = {
         }
       >
     >;
-  };
+  } | {
+    type: 'api-recorder',
+    demoData: unknown;
+  }
 };
