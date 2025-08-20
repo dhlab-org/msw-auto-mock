@@ -9,11 +9,10 @@ type TemplateContract = {
 
 class OverrideHandlerTemplate implements TemplateContract {
   ofScenario(scenarioId: string, requestGroups: TRequestGroup[]): string {
-    const imports = this.#imports();
     const handlers = requestGroups.map(group => this.#handler(group.method, group.url, group.responses));
 
     return `
-      ${imports}
+      import { HttpResponse, http } from 'msw';
       
       export const ${this.#scenarioName(scenarioId)}Handlers = [
         ${handlers.join('\n').trimEnd()}
@@ -35,10 +34,6 @@ class OverrideHandlerTemplate implements TemplateContract {
 
   #scenarioName(scenarioId: string): string {
     return scenarioId.replace(/[^a-zA-Z0-9]/g, '');
-  }
-
-  #imports(): string {
-    return [`import { HttpResponse, http } from 'msw';`].join('\n');
   }
 
   #handler(method: string, url: string, groupData: TApiRecorderData[]): string {

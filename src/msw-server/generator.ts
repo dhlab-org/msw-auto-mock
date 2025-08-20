@@ -51,7 +51,7 @@ class MSWServerGenerator implements GeneratorContract {
 
     const { import: importName, from, export: exportName } = config[type];
 
-    const overrideHandlers = `
+    const overrideNetwork = `
       const scenarioName = new URLSearchParams(window.location.search).get('scenario');
 
       ${exportName}.use(
@@ -65,9 +65,9 @@ class MSWServerGenerator implements GeneratorContract {
       `import { ${importName} } from '${from}'`,
       `import { baseHandlers } from './__handlers__/base'`,
       `import { overrideHandlers } from "./__handlers__/override";`,
-
+      '',
       `export const ${exportName} = ${importName}(...baseHandlers)`,
-      overrideHandlers,
+      overrideNetwork,
     ].join('\n');
   }
 }
