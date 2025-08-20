@@ -10,7 +10,7 @@ type TemplateContract = {
   ofAllCombined(entities: string[]): string;
 };
 
-class HandlerTemplate implements TemplateContract {
+class BaseHandlerTemplate implements TemplateContract {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
     const imports = this.#imports(context);
     const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
@@ -199,7 +199,7 @@ class HandlerTemplate implements TemplateContract {
   }
 }
 
-export { HandlerTemplate, type TemplateContract as HandlerTemplateContract, type TContext };
+export { BaseHandlerTemplate, type TemplateContract as BaseHandlerTemplateContract, type TContext };
 
 type TContext = {
   baseURL: string;

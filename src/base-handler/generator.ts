@@ -2,25 +2,25 @@ import path from 'node:path';
 import type { ApiEndpointContract } from '../api-endpoint';
 import type { SwaggerContract } from '../swagger';
 import type { TOptions } from '../types';
-import { writeFile } from '../utils.cjs';
-import { HandlerTemplate, type HandlerTemplateContract, type TContext as TTemplateContext } from './template';
+import { writeFile } from '../utils.cjs.js';
+import { BaseHandlerTemplate, type BaseHandlerTemplateContract, type TContext as TTemplateContext } from './template';
 
 type GeneratorContract = {
   generate(targetFolder: string): Promise<void>;
 };
 
-class HandlerGenerator implements GeneratorContract {
+class BaseHandlerGenerator implements GeneratorContract {
   private readonly options: TOptions;
   private readonly apiEndpoint: ApiEndpointContract;
   private readonly swagger: SwaggerContract;
   private readonly OUTPUT_DIR = '__handlers__/base';
-  private readonly template: HandlerTemplateContract;
+  private readonly template: BaseHandlerTemplateContract;
 
   constructor(options: TOptions, apiEndpoint: ApiEndpointContract, swagger: SwaggerContract) {
     this.options = options;
     this.apiEndpoint = apiEndpoint;
     this.swagger = swagger;
-    this.template = new HandlerTemplate();
+    this.template = new BaseHandlerTemplate();
   }
 
   async generate(targetFolder: string): Promise<void> {
@@ -54,4 +54,4 @@ class HandlerGenerator implements GeneratorContract {
   }
 }
 
-export { HandlerGenerator };
+export { BaseHandlerGenerator };
