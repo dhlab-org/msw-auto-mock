@@ -1,21 +1,16 @@
 import { match } from 'ts-pattern';
+import type { TRequestGroup } from './adapter';
 import type { TApiRecorderData, THTTPRest, THTTPStream } from './api-recorder.types';
 
 type TemplateContract = {
-  ofScenario(scenarioId: string, apiRecorderJson: TApiRecorderData[]): string;
+  ofScenario(scenarioId: string, requestGroups: TRequestGroup[]): string;
   ofAllCombined(templates: string[]): string;
 };
 
 class OverrideHandlerTemplate implements TemplateContract {
-  ofScenario(scenarioId: string, apiRecorderJson: TApiRecorderData[]): string {
+  ofScenario(scenarioId: string, requestGroups: TRequestGroup[]): string {
     const imports = this.#imports();
-    const handlers = apiRecorderJson.map(apiRecorderData => {
-      return match(apiRecorderData)
-        .with({ type: 'http-rest' }, restData => this.#ofHttpRest(restData))
-        .with({ type: 'http-stream' }, streamData => this.#ofHttpStream(streamData))
-        .with({ type: 'socketio' }, () => '')
-        .exhaustive();
-    });
+    const handlers = requestGroups.map(group => this.#handler(group.method, group.url, group.responses));
 
     return `
       ${imports}
@@ -46,33 +41,47 @@ class OverrideHandlerTemplate implements TemplateContract {
     return [`import { HttpResponse, http } from 'msw';`].join('\n');
   }
 
-  #ofHttpRest(restData: THTTPRest): string {
+  #handler(method: string, url: string, groupData: TApiRecorderData[]): string {
+    const responses = groupData
+      .map(data => {
+        return match(data)
+          .with({ type: 'http-rest' }, restData => this.#restResponse(restData))
+          .with({ type: 'http-stream' }, streamData => this.#streamResponse(streamData))
+          .otherwise(() => '');
+      })
+      .filter(Boolean);
+
+    const responseArray = `[${responses.join(', ')}]`;
+
     return `
-      http.${restData.request.method.toLowerCase()}(
-        '${restData.request.url}',
-        () => {
-          return new HttpResponse(${JSON.stringify(restData.response?.body)}, {
-            status: ${restData.response?.status},
-            headers: ${JSON.stringify(restData.response?.headers)},
-          });
-        },
-      ),\n
+        (() => {
+          let requestCount = 0;
+          return http.${method.toLowerCase()}(
+            '${url}',
+            () => {
+              const responses = ${responseArray};
+              const responseIndex = Math.min(requestCount, responses.length - 1);
+              requestCount++;
+              return responses[responseIndex];
+            },
+          );
+        })(),\n
     `;
   }
 
-  #ofHttpStream(streamData: THTTPStream): string {
+  #restResponse(restData: THTTPRest): string {
+    return `new HttpResponse(JSON.stringify(${JSON.stringify(restData.response?.body)}), {
+      status: ${restData.response?.status},
+      headers: ${JSON.stringify(restData.response?.headers)},
+    })`;
+  }
+
+  #streamResponse(streamData: THTTPStream): string {
     const body = `createStreamingResponse(${JSON.stringify(streamData.streamEvents)})`;
-    return `
-      http.${streamData.request.method.toLowerCase()}(
-        '${streamData.request.url}',
-        () => {
-          return new HttpResponse(${body}, {
-            status: ${streamData.response?.status},
-            headers: ${JSON.stringify(streamData.response?.headers)},
-          });
-        },
-      ),\n
-    `;
+    return `new HttpResponse(${body}, {
+      status: ${streamData.response?.status},
+      headers: ${JSON.stringify(streamData.response?.headers)},
+    })`;
   }
 }
 

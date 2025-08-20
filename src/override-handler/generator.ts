@@ -3,6 +3,7 @@ import path from 'node:path';
 import { match } from 'ts-pattern';
 import type { TScenarioConfig } from '../types';
 import { writeFile } from '../utils.cjs';
+import { OverrideHandlerAdapter, type OverrideHandlerAdapterContract } from './adapter';
 import type { TApiRecorderData } from './api-recorder.types';
 import { OverrideHandlerTemplate, type OverrideHandlerTemplateContract } from './template';
 
@@ -12,10 +13,12 @@ type GeneratorContract = {
 
 class OverrideHandlerGenerator implements GeneratorContract {
   private readonly template: OverrideHandlerTemplateContract;
+  private readonly adapter: OverrideHandlerAdapterContract;
   private readonly OUTPUT_DIR = '__handlers__/override';
 
   constructor() {
     this.template = new OverrideHandlerTemplate();
+    this.adapter = new OverrideHandlerAdapter();
   }
 
   async generate(targetFolder: string): Promise<void> {
@@ -35,7 +38,8 @@ class OverrideHandlerGenerator implements GeneratorContract {
       Object.entries(scenarios).map(([scenarioId, scenario]) =>
         match(scenario)
           .with({ type: 'api-recorder' }, ({ demoData }) => {
-            const template = this.template.ofScenario(scenarioId, demoData as TApiRecorderData[]);
+            const requestGroups = this.adapter.requestGroups(demoData as TApiRecorderData[]);
+            const template = this.template.ofScenario(scenarioId, requestGroups);
             const filePath = path.resolve(
               process.cwd(),
               path.join(targetFolder, this.OUTPUT_DIR),
