@@ -64,20 +64,23 @@ export type TStreamingEvent = {
 export type TScenarioConfig = {
   [scenarioId: string]: {
     description: string;
-  } & {
-    type: 'custom-status',
-    api: Record<
-      string,
-      Record<
-        string,
-        {
-          status: number;
-          allowCustomStatus?: boolean;
-        }
-      >
-    >;
-  } | {
-    type: 'api-recorder',
-    demoData: unknown;
-  }
+  } & (
+    | {
+        type: 'custom-status';
+        api: Record<
+          string,
+          Record<
+            string,
+            {
+              status: number;
+              allowCustomStatus?: boolean;
+            }
+          >
+        >;
+      }
+    | {
+        type: 'api-recorder';
+        demoData: unknown;
+      }
+  );
 };

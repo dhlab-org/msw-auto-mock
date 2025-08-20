@@ -24,6 +24,8 @@ ${adapter.statusCodesType}
     const scenarioConfigType = `export type TScenarioConfig = {
   [scenarioId: string]: {
     description: string;
+  } & ({
+    type: 'custom-status';
     api: {
       [K in TApiPaths]?: {
         [M in TApiMethods<K>]?: {
@@ -35,7 +37,10 @@ ${adapter.statusCodesType}
         };
       };
     };
-  };
+  } | {
+    type: 'api-recorder';
+    demoData: unknown;
+  });
 };`;
 
     return `/**

@@ -60,7 +60,7 @@ class HandlerTemplate implements TemplateContract {
       `import { faker } from '@faker-js/faker';`,
       `import { type TStreamingEvent, selectResponseByScenario } from '${pkg.name}';`,
       `import { controllers } from '${context.controllerPath}';`,
-      `import { scenarios } from '../scenarios';`,
+      `import { scenarios } from '../../scenarios';`,
     ].join('\n');
   }
 
