@@ -52,8 +52,9 @@ class MSWServerGenerator implements GeneratorContract {
     const { import: importName, from, export: exportName } = config[type];
     return [
       `import { ${importName} } from '${from}'`,
-      `import { handlers } from './__handlers__/base'`,
-      `export const ${exportName} = ${importName}(...handlers)`,
+      `import { baseHandlers } from './__handlers__/base'`,
+      
+      `export const ${exportName} = ${importName}(...baseHandlers)`,
     ].join('\n');
   }
 }

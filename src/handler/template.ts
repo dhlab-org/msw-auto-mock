@@ -47,7 +47,7 @@ class HandlerTemplate implements TemplateContract {
       .map(entity => `import { ${entity}Handlers } from './${entity}.handlers';`)
       .join('\n');
 
-    const combineHandlers = `export const handlers = [
+    const combineHandlers = `export const baseHandlers = [
       ${entities.map(entity => `...${entity}Handlers,`).join('\n')}
     ]`;
 
