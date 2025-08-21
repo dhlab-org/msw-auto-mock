@@ -55,7 +55,8 @@ class MSWServerGenerator implements GeneratorContract {
       const scenarioName = new URLSearchParams(window.location.search).get('scenario');
 
       ${exportName}.use(
-        ...(scenarioName
+        ...(scenarioName &&
+        overrideHandlers[scenarioName as keyof typeof overrideHandlers]
           ? overrideHandlers[scenarioName as keyof typeof overrideHandlers]
           : [])
       );
