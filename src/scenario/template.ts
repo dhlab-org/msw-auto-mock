@@ -22,6 +22,7 @@ export const scenarios: TScenarioConfig = {
   // 예시 시나리오들 (필요에 따라 수정/추가)
   'TC-1.1': {
     description: '성공 시나리오',
+    type: 'custom-status',
     api: {
       // "/users": {
       //   "GET": { status: 200 },
@@ -36,6 +37,7 @@ export const scenarios: TScenarioConfig = {
   },
   'TC-1.2': {
     description: '오류 시나리오',
+    type: 'custom-status',
     api: {
       // "/users": {
       //   "GET": { status: 500 },
@@ -46,6 +48,11 @@ export const scenarios: TScenarioConfig = {
       //   "GET": { status: 418, allowCustomStatus: true }
       // }
     }
+  },
+  'login-success': {
+    description: '로그인 성공 데모',
+    type: 'api-recorder',
+    demoData: []
   }
 };
 `;
