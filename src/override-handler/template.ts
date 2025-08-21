@@ -10,9 +10,13 @@ type TemplateContract = {
 class OverrideHandlerTemplate implements TemplateContract {
   ofScenario(scenarioId: string, requestGroups: TRequestGroup[]): string {
     const handlers = requestGroups.map(group => this.#handler(group.method, group.url, group.responses));
+    const hasStreamingResponse = this.#hasStreamingResponse(requestGroups);
+    const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : '';
 
     return `
       import { HttpResponse, http } from 'msw';
+
+      ${streamingUtils}
       
       export const ${this.#scenarioName(scenarioId)}Handlers = [
         ${handlers.join('\n').trimEnd()}
@@ -65,18 +69,49 @@ class OverrideHandlerTemplate implements TemplateContract {
   }
 
   #restResponse(restData: THTTPRest): string {
-    return `new HttpResponse(JSON.stringify(${JSON.stringify(restData.response?.body)}), {
-      status: ${restData.response?.status},
-      headers: ${JSON.stringify(restData.response?.headers)},
-    })`;
+    const status = restData.response?.status ?? 200;
+    const options = {
+      status,
+      ...(restData.response?.headers && { headers: restData.response.headers }),
+    };
+    return `new HttpResponse(JSON.stringify(${JSON.stringify(restData.response?.body)}), ${JSON.stringify(options)})`;
   }
 
   #streamResponse(streamData: THTTPStream): string {
     const body = `createStreamingResponse(${JSON.stringify(streamData.streamEvents)})`;
-    return `new HttpResponse(${body}, {
-      status: ${streamData.response?.status},
-      headers: ${JSON.stringify(streamData.response?.headers)},
-    })`;
+    const status = streamData.response?.status ?? 200;
+    const options = {
+      status,
+      ...(streamData.response?.headers && { headers: streamData.response.headers }),
+    };
+    return `new HttpResponse(${body}, ${JSON.stringify(options)})`;
+  }
+
+  #streamingUtils(): string {
+    return `
+      // streaming response utility
+      function createStreamingResponse(messages: TStreamingEvent[]) {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            for (const chunk of messages) {
+              if (chunk.delay) {
+                await new Promise((resolve) => setTimeout(resolve, chunk.delay));
+              }
+              controller.enqueue(
+                encoder.encode(\`event: \${chunk.event}\\n\${chunk.data ? \`data: \${chunk.data}\\n\` : ''}\\n\`)
+              );
+            }
+            controller.close();
+          },
+        });
+        return stream;
+      }
+    `;
+  }
+
+  #hasStreamingResponse(requestGroups: TRequestGroup[]): boolean {
+    return requestGroups.some(group => group.responses.some(data => data.type === 'http-stream'));
   }
 }
 
