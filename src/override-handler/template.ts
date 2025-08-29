@@ -25,15 +25,18 @@ class OverrideHandlerTemplate implements TemplateContract {
   }
 
   ofAllCombined(scenarios: string[]): string {
-    const handlersImport = scenarios
-      .map(scenario => `import { ${this.#scenarioName(scenario)}Handlers } from './${scenario}.handlers';`)
-      .join('\n');
+    const handlersImport =
+      scenarios.length > 0
+        ? scenarios
+            .map(scenario => `import { ${this.#scenarioName(scenario)}Handlers } from './${scenario}.handlers';`)
+            .join('\n')
+        : '';
 
     const combineHandlers = `export const overrideHandlers = {
       ${scenarios.map(scenario => `"${scenario}": ${this.#scenarioName(scenario)}Handlers,`).join('\n')}
     }`;
 
-    return [handlersImport, combineHandlers].join('\n\n');
+    return scenarios.length > 0 ? [handlersImport, combineHandlers].join('\n\n') : combineHandlers;
   }
 
   #scenarioName(scenarioId: string): string {
