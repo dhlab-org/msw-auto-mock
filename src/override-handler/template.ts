@@ -13,7 +13,10 @@ class OverrideHandlerTemplate implements TemplateContract {
     const hasStreamingResponse = this.#hasStreamingResponse(requestGroups);
     const streamingUtils = hasStreamingResponse ? this.#streamingUtils() : '';
 
+    const streamingImport = hasStreamingResponse ? `import type { TStreamingEvent } from '@dhlab/msw-auto-mock';` : '';
+
     return `
+      ${streamingImport}
       import { HttpResponse, http } from 'msw';
 
       ${streamingUtils}
@@ -81,7 +84,14 @@ class OverrideHandlerTemplate implements TemplateContract {
   }
 
   #streamResponse(streamData: THTTPStream): string {
-    const body = `createStreamingResponse(${JSON.stringify(streamData.streamEvents)})`;
+    // 스트리밍 데이터를 TStreamingEvent 형식으로 파싱
+    const streamEvents = streamData.streamEvents.map(chunk => ({
+      event: (chunk.type || 'message_delta') as 'message_start' | 'message_delta' | 'message_end',
+      data: typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data),
+      delay: chunk.delay,
+    }));
+
+    const body = `createStreamingResponse(${JSON.stringify(streamEvents)})`;
     const status = streamData.response?.status ?? 200;
     const options = {
       status,

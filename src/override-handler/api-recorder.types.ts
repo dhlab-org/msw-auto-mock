@@ -1,3 +1,5 @@
+import type { TStreamingEvent } from '../types';
+
 export type THTTPRest = {
   requestId: string;
   type: 'http-rest';
@@ -16,6 +18,8 @@ export type THTTPStream = {
   response?: THTTPResponse;
   /** 스트리밍 이벤트들 (SSE 메시지들) */
   streamEvents: TStreamChunk[];
+  /** 스트림 이벤트들을 파싱한 결과 */
+  parsedStreamEvents: TStreamingEvent[];
   /** 요청 시작부터 스트림 종료까지의 총 시간(ms) */
   totalDuration?: number;
   /** 스트림 시작 시각 */
@@ -50,6 +54,7 @@ export type TStreamChunk = {
   delay?: number;
   timestamp: number;
   phase?: 'open' | 'message' | 'error' | 'close';
+  type?: string;
 };
 
 export type TSocketIO = {

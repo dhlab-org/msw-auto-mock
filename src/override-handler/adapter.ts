@@ -1,4 +1,5 @@
-import type { TApiRecorderData } from './api-recorder.types';
+import type { TStreamingEvent } from '../types';
+import type { TApiRecorderData, THTTPStream } from './api-recorder.types';
 
 type AdapterContract = {
   requestGroups(apiRecorderJson: TApiRecorderData[]): TRequestGroup[];
@@ -17,7 +18,14 @@ class OverrideHandlerAdapter implements AdapterContract {
         }
         const group = groups.get(key);
         if (group) {
-          group.push(data);
+          if (data.type === 'http-stream') {
+            group.push({
+              ...data,
+              parsedStreamEvents: this.#parseStreamData(data),
+            });
+          } else {
+            group.push(data);
+          }
         }
       }
     }
@@ -35,6 +43,16 @@ class OverrideHandlerAdapter implements AdapterContract {
         method,
         url,
         responses,
+      };
+    });
+  }
+
+  #parseStreamData(streamData: THTTPStream): TStreamingEvent[] {
+    return streamData.streamEvents.map(chunk => {
+      return {
+        event: (chunk.type || 'message_delta') as 'message_start' | 'message_delta' | 'message_end',
+        data: typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data),
+        delay: chunk.delay,
       };
     });
   }
