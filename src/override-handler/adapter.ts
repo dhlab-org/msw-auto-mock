@@ -1,4 +1,3 @@
-import type { TStreamingEvent } from '../types';
 import type { TApiRecorderData, THTTPStream } from './api-recorder.types';
 
 type AdapterContract = {
@@ -47,7 +46,7 @@ class OverrideHandlerAdapter implements AdapterContract {
     });
   }
 
-  #parseStreamData(streamData: THTTPStream): TStreamingEvent[] {
+  #parseStreamData(streamData: THTTPStream): THTTPStream['parsedStreamEvents'] {
     return streamData.streamEvents.map(chunk => {
       return {
         event: (chunk.type || 'message_delta') as 'message_start' | 'message_delta' | 'message_end',

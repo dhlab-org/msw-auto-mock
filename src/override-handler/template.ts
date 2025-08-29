@@ -84,14 +84,7 @@ class OverrideHandlerTemplate implements TemplateContract {
   }
 
   #streamResponse(streamData: THTTPStream): string {
-    // 스트리밍 데이터를 TStreamingEvent 형식으로 파싱
-    const streamEvents = streamData.streamEvents.map(chunk => ({
-      event: (chunk.type || 'message_delta') as 'message_start' | 'message_delta' | 'message_end',
-      data: typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data),
-      delay: chunk.delay,
-    }));
-
-    const body = `createStreamingResponse(${JSON.stringify(streamEvents)})`;
+    const body = `createStreamingResponse(${JSON.stringify(streamData.parsedStreamEvents)})`;
     const status = streamData.response?.status ?? 200;
     const options = {
       status,
