@@ -21,7 +21,7 @@ export function selectResponseByScenario(
 
   const scenarioId = info.request.headers.get('x-scenario') || 'default';
 
-  if (scenarioId === 'default' || !scenarios) {
+  if (scenarioId === 'default' || !scenarios || !scenarios[scenarioId]) {
     return getDefaultScenario();
   }
 
