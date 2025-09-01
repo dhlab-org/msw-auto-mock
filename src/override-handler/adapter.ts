@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { TApiRecorderData, THTTPStream } from './api-recorder.types';
 
 type AdapterContract = {
@@ -9,23 +10,21 @@ class OverrideHandlerAdapter implements AdapterContract {
     const groups = new Map<string, TApiRecorderData[]>();
 
     for (const data of apiRecorderJson) {
-      if (data.type === 'http-rest' || data.type === 'http-stream') {
-        const key = `${data.request.method}:${data.request.url}`;
-
-        if (!groups.has(key)) {
-          groups.set(key, []);
-        }
-        const group = groups.get(key);
-        if (group) {
-          if (data.type === 'http-stream') {
-            group.push({
-              ...data,
-              parsedStreamEvents: this.#parseStreamData(data),
-            });
-          } else {
-            group.push(data);
-          }
-        }
+      if (data.type !== 'http-rest' && data.type !== 'http-stream') {
+        continue;
+      }
+      const key = `${data.request.method}:${data.request.url}`;
+      const group = groups.get(key) || [];
+      const finalData = match(data)
+        .with({ type: 'http-stream' }, streamData => ({
+          ...streamData,
+          parsedStreamEvents: this.#parseStreamData(streamData),
+        }))
+        .with({ type: 'http-rest' }, restData => restData)
+        .otherwise(() => null);
+      if (finalData) {
+        group.push(finalData);
+        groups.set(key, group);
       }
     }
 
