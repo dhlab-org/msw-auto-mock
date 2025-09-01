@@ -52,14 +52,12 @@ class MSWServerGenerator implements GeneratorContract {
     const { import: importName, from, export: exportName } = config[type];
 
     const overrideNetwork = `
+      const isOverrideScenario = (scenarioName: unknown): scenarioName is keyof typeof overrideHandlers => {
+        return typeof scenarioName === 'string' && scenarioName in overrideHandlers;
+      };
       const scenarioName = new URLSearchParams(window.location.search).get('scenario');
 
-      ${exportName}.use(
-        ...(scenarioName &&
-        overrideHandlers[scenarioName as keyof typeof overrideHandlers]
-          ? overrideHandlers[scenarioName as keyof typeof overrideHandlers]
-          : [])
-      );
+      ${exportName}.use(...(isOverrideScenario(scenarioName) ? overrideHandlers[scenarioName] : []));
     `;
 
     return [
