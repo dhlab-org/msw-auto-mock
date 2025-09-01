@@ -30,7 +30,7 @@ ${adapter.statusCodesType}
       [K in TApiPaths]?: {
         [M in TApiMethods<K>]?: {
           status: TApiStatusCodes[K][M];
-          allowCustomStatus?: boolean;
+          allowCustomStatus?: false;
         } | {
           status: number;
           allowCustomStatus: true;
