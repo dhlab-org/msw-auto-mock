@@ -9,14 +9,29 @@ class ScenarioTemplate implements TemplateContract {
 /**
  * MSW 시나리오 설정
  * 
- * 헤더 'x-scenario'를 통해 특정 시나리오를 활성화할 수 있습니다.
+ * 두 가지 시나리오 타입을 지원합니다:
+ * 
+ * ## 1. Custom Status 타입 (Base Handler 사용)
+ * - 헤더 'x-scenario'를 통해 특정 시나리오를 활성화
+ * - 브라우저에서 쿼리 파라미터로 시나리오 변경 시, 각 프로젝트에서 interceptor 설정 필요
  * 
  * 예시:
  * - 기본 (헤더 없음): 성공 응답 (200-299)
- * - curl -H "x-scenario: success" /api/users
- * - curl -H "x-scenario: error" /api/users
+ * - curl -H "x-scenario: TC-1.1" /api/users
+ * - curl -H "x-scenario: TC-1.2" /api/users
  * 
  * allowCustomStatus: true를 사용하면 OpenAPI 명세에 없는 status 코드도 사용 가능합니다.
+ * 
+ * ## 2. API Recorder 타입 (Override Handler 사용)
+ * - 브라우저 URL 쿼리 파라미터로 시나리오 동적 변경 가능
+ * - api-recorder와 msw-auto-mock 통합 사용
+ * - worker.use로 동적으로 핸들러 추가되는 방식
+ * - demoData에 api-recorder로 export한 JSON 데이터를 넣어주세요
+ * 
+ * 예시:
+ * - ?scenario=login-success
+ * - ?scenario=api-error
+ * 
  */
 export const scenarios: TScenarioConfig = {
   // 예시 시나리오들 (필요에 따라 수정/추가)
