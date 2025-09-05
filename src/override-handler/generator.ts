@@ -22,15 +22,32 @@ class OverrideHandlerGenerator implements GeneratorContract {
   }
 
   async generate(targetFolder: string): Promise<void> {
-    const scenarioFilePath = path.resolve(process.cwd(), targetFolder, 'scenarios.ts');
-    if (!fs.existsSync(scenarioFilePath)) return;
-
-    const { scenarios } = await import(scenarioFilePath);
+    const scenarios = await this.#scenarios(targetFolder);
+    if (!scenarios) return;
 
     await Promise.all([
       this.#generateHandlersByScenario(targetFolder, scenarios),
       this.#generateCombinedHandler(targetFolder, scenarios),
     ]);
+  }
+
+  async #scenarios(targetFolder: string) {
+    const scenarioFilePath = path.resolve(process.cwd(), targetFolder, 'scenarios.ts');
+    if (!fs.existsSync(scenarioFilePath)) return null;
+
+    const scenarioModule = await import(scenarioFilePath);
+
+    if (!scenarioModule.scenarios) {
+      console.error(
+        `❌ 시나리오 파일 형식 오류: ${scenarioFilePath}
+   'scenarios' 객체가 존재하지 않습니다.
+   올바른 형식: export const scenarios = { ... };
+   파일을 확인하고 수정한 후 다시 시도해주세요.`,
+      );
+      return null;
+    }
+
+    return scenarioModule.scenarios;
   }
 
   async #generateHandlersByScenario(targetFolder: string, scenarios: TScenarioConfig): Promise<void> {
