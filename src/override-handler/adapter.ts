@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { TStreamingEvent } from '../types';
 import type { TApiRecorderData, THTTPStream } from './api-recorder.types';
 
 type AdapterContract = {
@@ -47,12 +48,24 @@ class OverrideHandlerAdapter implements AdapterContract {
 
   #parseStreamData(streamData: THTTPStream): THTTPStream['parsedStreamEvents'] {
     return streamData.streamEvents.map(chunk => {
+      const eventType = chunk.type || 'message_delta';
+      const isKnownEventType = this.#isKnownEventType(eventType);
+
+      if (!isKnownEventType) {
+        console.warn(`${eventType}은 지원하지 않는 스트리밍 이벤트 타입입니다. 기본값으로 message_delta를 사용합니다.`);
+      }
+
       return {
-        event: (chunk.type || 'message_delta') as 'message_start' | 'message_delta' | 'message_end',
+        event: isKnownEventType ? eventType : 'message_delta',
         data: typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data),
         delay: chunk.delay,
       };
     });
+  }
+
+  #isKnownEventType(eventType: string): eventType is TStreamingEvent['event'] {
+    const knownTypes: TStreamingEvent['event'][] = ['message_start', 'message_delta', 'message_end'];
+    return knownTypes.includes(eventType as TStreamingEvent['event']);
   }
 }
 
