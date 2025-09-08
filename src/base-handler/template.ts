@@ -10,7 +10,7 @@ type TemplateContract = {
   ofAllCombined(entities: string[]): string;
 };
 
-class HandlerTemplate implements TemplateContract {
+class BaseHandlerTemplate implements TemplateContract {
   ofEntity(entityOperations: TOperation[], entity: string, context: TContext): string {
     const imports = this.#imports(context);
     const hasStreamingResponse = this.#hasStreamingResponse(entityOperations);
@@ -47,7 +47,7 @@ class HandlerTemplate implements TemplateContract {
       .map(entity => `import { ${entity}Handlers } from './${entity}.handlers';`)
       .join('\n');
 
-    const combineHandlers = `export const handlers = [
+    const combineHandlers = `export const baseHandlers = [
       ${entities.map(entity => `...${entity}Handlers,`).join('\n')}
     ]`;
 
@@ -60,7 +60,7 @@ class HandlerTemplate implements TemplateContract {
       `import { faker } from '@faker-js/faker';`,
       `import { type TStreamingEvent, selectResponseByScenario } from '${pkg.name}';`,
       `import { controllers } from '${context.controllerPath}';`,
-      `import { scenarios } from '../scenarios';`,
+      `import { scenarios } from '../../scenarios';`,
     ].join('\n');
   }
 
@@ -199,7 +199,7 @@ class HandlerTemplate implements TemplateContract {
   }
 }
 
-export { HandlerTemplate, type TemplateContract as HandlerTemplateContract, type TContext };
+export { BaseHandlerTemplate, type TemplateContract as BaseHandlerTemplateContract, type TContext };
 
 type TContext = {
   baseURL: string;

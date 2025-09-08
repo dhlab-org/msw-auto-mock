@@ -21,12 +21,12 @@ export function selectResponseByScenario(
 
   const scenarioId = info.request.headers.get('x-scenario') || 'default';
 
-  if (scenarioId === 'default' || !scenarios) {
+  if (scenarioId === 'default' || !scenarios || !scenarios[scenarioId]) {
     return getDefaultScenario();
   }
 
   const scenario = scenarios[scenarioId];
-  const apiConfig = scenario.api[path]?.[verb.toUpperCase()];
+  const apiConfig = scenario.type === 'custom-status' ? scenario.api[path]?.[verb.toUpperCase()] : undefined;
 
   if (!apiConfig) {
     return getDefaultScenario();

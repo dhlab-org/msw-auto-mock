@@ -1,8 +1,9 @@
 import path from 'node:path';
 import { ApiEndpoint } from './api-endpoint';
+import { BaseHandlerGenerator } from './base-handler/generator';
 import { ControllerTypeDefinitionGenerator } from './controller-type-definition/generator';
-import { HandlerGenerator } from './handler/generator';
 import { MSWServerGenerator } from './msw-server/generator';
+import { OverrideHandlerGenerator } from './override-handler/generator';
 import { ScenarioTypeDefinitionGenerator } from './scenario-type-definition/generator';
 import { ScenarioGenerator } from './scenario/generator';
 import { Swagger } from './swagger';
@@ -27,7 +28,8 @@ async function generateMocks(options: TOptions) {
   const targetFolder = path.resolve(process.cwd(), outputFolder);
 
   await Promise.all([
-    new HandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
+    new BaseHandlerGenerator(options, apiEndpoint, swagger).generate(targetFolder),
+    new OverrideHandlerGenerator().generate(targetFolder),
     new MSWServerGenerator(options.environment).generate(targetFolder),
     new ControllerTypeDefinitionGenerator(apiEndpoint, options.dtoImportPath).generate(targetFolder),
     new ScenarioTypeDefinitionGenerator(apiEndpoint).generate(targetFolder),

@@ -24,18 +24,23 @@ ${adapter.statusCodesType}
     const scenarioConfigType = `export type TScenarioConfig = {
   [scenarioId: string]: {
     description: string;
+  } & ({
+    type: 'custom-status';
     api: {
       [K in TApiPaths]?: {
         [M in TApiMethods<K>]?: {
           status: TApiStatusCodes[K][M];
-          allowCustomStatus?: boolean;
+          allowCustomStatus?: false;
         } | {
           status: number;
           allowCustomStatus: true;
         };
       };
     };
-  };
+  } | {
+    type: 'api-recorder';
+    demoData: unknown;
+  });
 };`;
 
     return `/**
